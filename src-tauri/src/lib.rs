@@ -70,8 +70,6 @@ fn fuzzy_search(search_term: String, state: State<'_, Mutex<AppData>>) -> Vec<St
     println!("search term: {}", search_term);
 
     let cwd = &state.lock().unwrap().project_dir;
-    // let cwd = get_project_dir(None);
-    // println!("cwd: {}", state.project_dir);
 
     let paths: Vec<String> = WalkDir::new(cwd)
         .into_iter()
@@ -93,10 +91,6 @@ fn fuzzy_search(search_term: String, state: State<'_, Mutex<AppData>>) -> Vec<St
 
     let results = Pattern::parse(&search_term, CaseMatching::Ignore, Normalization::Smart)
         .match_list(paths, &mut matcher);
-
-    for (path, score) in &results {
-        println!("{} - {}", path, score);
-    }
 
     results.into_iter().map(|(p, _s)| p).collect()
 }
@@ -133,10 +127,18 @@ struct ReadFileToolArgs {
     path: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ResponseUsage {
+    prompt_tokens: u32,
+    completion_tokens: u32,
+    total_tokens: u32,
+}
+
 #[derive(Debug, Deserialize)]
 struct ChatCompletionResponse {
     id: String,
     choices: Vec<Choice>,
+    usage: Option<ResponseUsage>,
 }
 
 #[derive(PartialEq, Debug, Deserialize)]
@@ -236,7 +238,10 @@ async fn run_chat_completion(
     let mut pending_tool_calls: Vec<ToolCall> = vec![];
 
     loop {
-        println!("MESSAGES: {:?}", &messages);
+        println!(
+            "MESSAGES: {:?}",
+            &messages.iter().map(|m| &m.role).collect::<Vec<&Role>>()
+        );
 
         let payload = ChatCompletionRequest {
             model: "google/gemini-2.5-flash-preview:nitro".to_string(),
@@ -288,15 +293,15 @@ async fn run_chat_completion(
                     for line in chunk.lines() {
                         if let Some(json_str) = line.strip_prefix("data: ") {
                             if json_str == "[DONE]" {
-                                println!("KINDA DONE");
+                                println!("GOT [DONE]");
                                 done = true;
                                 break;
                             }
 
                             match serde_json::from_str::<ChatCompletionResponse>(json_str) {
                                 Ok(msg) => {
+                                    println!("CHOICES: {:#?} {:#?}", &msg.choices, &msg.usage);
                                     let choice = &msg.choices[0];
-                                    println!("CHOICE: {:#?}", &choice);
                                     if let Some(delta) = &choice.delta {
                                         if let Some(text) = &delta.content {
                                             assistant_response.push_str(text);
@@ -314,10 +319,10 @@ async fn run_chat_completion(
 
                                                 for call in tool_calls.iter().cloned() {
                                                     pending_tool_calls.push(call);
-                                                    println!(
-                                                        "TOOL CALL DETECTED: {:#?}",
-                                                        &pending_tool_calls
-                                                    );
+                                                    // println!(
+                                                    //     "TOOL CALL DETECTED: {:#?}",
+                                                    //     &pending_tool_calls
+                                                    // );
                                                 }
                                             }
                                         }
@@ -368,7 +373,7 @@ async fn run_chat_completion(
                     })
                     .unwrap();
 
-                println!("TOOL CALLING: {}", &tool_name);
+                // println!("TOOL CALLING: {}", &tool_name);
 
                 let mut tool_message = ChatMessage {
                     role: Role::Tool,
@@ -392,7 +397,7 @@ async fn run_chat_completion(
                         "textContent": content
                     }))
                     .unwrap();
-                    println!("FINISHED READING");
+                    // println!("FINISHED READING");
                 }
 
                 on_event
@@ -408,7 +413,7 @@ async fn run_chat_completion(
         }
 
         if done && pending_tool_calls.is_empty() {
-            println!("DONE - DONE");
+            println!("DONE DONE");
             break;
         }
     }
