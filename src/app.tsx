@@ -32,10 +32,9 @@ const useGlobalShortcuts = () => {
 
 function Header({ cwd }: { cwd: string }) {
   return (
-    <div
-      data-tauri-drag-region
-      className="h-7 w-full px-2 cursor-pointer py-1 select-none border-b border-b-ctp-mauve flex items-center justify-between"
-    >
+    <div className="relative h-7 w-full px-2 cursor-pointer py-1 select-none border-b border-b-ctp-mauve flex items-center justify-between">
+      <div data-tauri-drag-region className="absolute inset-0" />
+
       <div className="w-1/3">
         <Aitetsu />
       </div>
@@ -51,12 +50,10 @@ function Header({ cwd }: { cwd: string }) {
   );
 }
 
-
-
 function App() {
   return (
     <main className="flex flex-col h-full font-mono">
-      {/* <Header cwd={cwd} /> */}
+      <Header cwd={"~"} />
 
       {/* <Chat /> */}
 
