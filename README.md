@@ -4,9 +4,7 @@ Basically, worse version of "Claude Code", "Codex", "OpenCode" but it is mine!
 
 ### TODO
 
-- [ ] Implement basic "agentic loop" using Vercel AI SDK with file system tool
-- [ ] Create reliable systems prompt, setup other important tools
-- [ ] Interactivity CLI
+- [ ] add `check_aws_lamda_logs` tool that can check CloudWatch logs of Lambda functions (for work)
 
 ### Demo
 
