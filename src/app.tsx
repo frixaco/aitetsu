@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "./App.css";
+import "./global.css";
 
 import { exit } from "@tauri-apps/plugin-process";
 import { open } from "@tauri-apps/plugin-dialog";

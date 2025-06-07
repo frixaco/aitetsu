@@ -1,10 +1,9 @@
+import { useState } from "react";
 import { Message } from "./message";
 
 export function Chat() {
-
-
   return (
-    <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2 text-ctp-pink">
+    <div className="flex flex-col gap-2 flex-1 overflow-y-auto p-2 text-Entered-pink">
       {history.map((item) => (
         <Message text={item} streaming={false} />
       ))}
