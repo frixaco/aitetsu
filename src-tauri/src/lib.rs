@@ -114,9 +114,7 @@ enum StreamEvent {
         tool_calls: Option<Vec<String>>,
     },
     #[serde(rename_all = "camelCase")]
-    Finished {
-        full_response: Option<String>,
-    },
+    Finished {},
     Error {
         message: String,
     },
@@ -308,7 +306,7 @@ async fn run_chat_completion(
                                             on_event
                                                 .send(StreamEvent::Delta {
                                                     role: Role::Assistant,
-                                                    content: Some(text.clone()),
+                                                    content: Some(assistant_response.clone()),
                                                     tool_calls: None,
                                                 })
                                                 .unwrap();
@@ -440,11 +438,7 @@ async fn call_llm(
 
     let result = run_chat_completion(&mut messages, &on_event, cwd).await;
 
-    on_event
-        .send(StreamEvent::Finished {
-            full_response: Some("done".to_string()),
-        })
-        .unwrap();
+    on_event.send(StreamEvent::Finished {}).unwrap();
 
     result
 }

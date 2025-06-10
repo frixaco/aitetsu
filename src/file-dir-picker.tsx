@@ -1,26 +1,35 @@
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
+
 type Props = {
-  path: string;
+  searchTerm: string | null;
+  onInput: (path: string) => void;
 };
 
-export function FileDirPicker({ path }: Props) {
+export function FileDirPicker({ searchTerm, onInput }: Props) {
+  const [items, setItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      if (!searchTerm) return;
+      const results: string[] = await invoke("fuzzy_search", { searchTerm });
+      setItems(results);
+      onInput(results[0]);
+    })();
+  }, [searchTerm]);
+
   return (
     <div className="absolute h-32 w-full text-ctp-green text-sm px-1 py-1 bottom-[8.5rem] rounded bg-ctp-mantle flex flex-col-reverse gap-1 overflow-auto">
-      {fileDirResults.length === 0 ? (
+      {items.length === 0 ? (
         <div>No results</div>
       ) : (
-        fileDirResults.map((item, idx) => {
+        items.map((item, idx) => {
           const isDirectory = item.endsWith("/");
           return (
             <button
               key={idx}
               className="flex items-center justify-start gap-1 rounded hover:bg-ctp-surface0 px-1 py-0.5"
-              onClick={() => {
-                const idxAt = prompt.lastIndexOf("@");
-                if (idxAt !== -1) {
-                  const before = prompt.slice(0, idxAt);
-                  setPrompt(before + "@" + item);
-                }
-              }}
+              onClick={() => onInput(item)}
             >
               {isDirectory ? (
                 <svg

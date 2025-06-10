@@ -1,50 +1,78 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import { FileDirPicker } from "./file-dir-picker";
-
-const SYSTEM_PROMPT: string = `You are a Senior Software Engineer with extensive knowledge in many programming languages, frameworks, libraries, design patterns and best practices.
-
-Answer in two phases.
-Phase 1 - present the solution and a detailed plan.
-Phase 2 - call tools if they are needed to accomplish given task; otherwise omit Phase 2.
-`;
-
-type StreamEvent =
-  | {
-      event: "started";
-      data: {
-        prompt: string;
-      };
-    }
-  | {
-      event: "delta";
-      data: {
-        content: string | null;
-        tool_calls: string[] | null;
-      };
-    }
-  | {
-      event: "finished";
-      data: {
-        full_response: string | null;
-      };
-    };
+import { useDebounce } from "./utils";
+import { ChatMessage, Role, StreamEvent, useChatStore } from "./store";
 
 export function PromptArea() {
- 
-    return (
-        <div className="h-32 relative w-full p-2">
-            <FileDirPicker path={""} />
+  const [inputValue, setInputValue] = useState("");
+  const prompt = useDebounce(inputValue, 300);
 
-            {/* textarea */}
-            <textarea
-                ref={promptInputRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.currentTarget.value)}
-                onKeyDown={onShortcut}
-                className="bg-ctp-base size-full px-2 py-1 text-ctp-pink border rounded border-ctp-surface2 focus:border-ctp-mauve outline-none"
-                autoFocus
-            />
-        </div>
-    )
+  const promptInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    promptInputRef.current?.focus();
+  }, []);
+
+  const [pickerValue, setPickerValue] = useState("");
+
+  const pickerActive = prompt.lastIndexOf("@") !== -1;
+  const searchTerm = !pickerActive
+    ? null
+    : prompt.slice(prompt.lastIndexOf("@") + 1);
+
+  return (
+    <div className="h-32 relative w-full p-2">
+      {pickerActive && (
+        <FileDirPicker
+          searchTerm={searchTerm}
+          onInput={(v) => setPickerValue(v)}
+        />
+      )}
+
+      <textarea
+        ref={promptInputRef}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.currentTarget.value)}
+        onKeyDown={async (e) => {
+          const key = e.key;
+
+          if (key === "Enter" && pickerActive) {
+            e.preventDefault();
+            const i = inputValue.lastIndexOf("@");
+            const path = inputValue.slice(0, i) + pickerValue;
+            setInputValue(path);
+          }
+
+          if (e.metaKey && key === "Enter") {
+            console.log("asldajslkdj");
+            e.preventDefault();
+            const messages: ChatMessage[] = [
+              {
+                role: Role.SYSTEM,
+                content: useChatStore.getState().systemPrompt,
+              },
+              ...useChatStore.getState().messages,
+              {
+                role: Role.USER,
+                content: prompt,
+              },
+            ];
+
+            const onEvent = new Channel<StreamEvent>();
+            onEvent.onmessage = (message) => {
+              console.log(message.data);
+            };
+
+            await invoke("call_llm", {
+              messages,
+              onEvent,
+            });
+          }
+        }}
+        className="bg-ctp-base size-full px-2 py-1 text-ctp-pink border rounded border-ctp-surface2 focus:border-ctp-mauve outline-none"
+        autoFocus
+      />
+    </div>
+  );
 }
