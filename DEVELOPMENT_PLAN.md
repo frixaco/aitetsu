@@ -48,6 +48,7 @@
 
 #### 1.3 Stream Event Handling
 
+- [ ] Improve event sending in Rust backend for easier frontend integration
 - [ ] Create proper event handlers for streaming responses
 - [ ] Connect frontend streaming to backend events
 - [ ] Add tool execution visual feedback

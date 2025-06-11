@@ -114,7 +114,10 @@ enum StreamEvent {
         tool_calls: Option<Vec<String>>,
     },
     #[serde(rename_all = "camelCase")]
-    Finished {},
+    Finished {
+        usage: Option<ResponseUsage>,
+        reason: FinishReason,
+    },
     Error {
         message: String,
     },
@@ -125,10 +128,13 @@ struct ReadFileToolArgs {
     path: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct ResponseUsage {
+    #[serde(rename(serialize = "promptTokens", deserialize = "prompt_tokens"))]
     prompt_tokens: u32,
+    #[serde(rename(serialize = "completionTokens", deserialize = "completion_tokens"))]
     completion_tokens: u32,
+    #[serde(rename(serialize = "totalTokens", deserialize = "total_tokens"))]
     total_tokens: u32,
 }
 
@@ -139,13 +145,18 @@ struct ChatCompletionResponse {
     usage: Option<ResponseUsage>,
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")] // tool_calls, stop, length, content_filter, error
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+// #[serde(rename_all = "snake_case")] // tool_calls, stop, length, content_filter, error
 enum FinishReason {
+    #[serde(rename(serialize = "toolCalls", deserialize = "tool_calls"))]
     ToolCalls,
+    #[serde(rename(serialize = "stop", deserialize = "stop"))]
     Stop,
+    #[serde(rename(serialize = "length", deserialize = "length"))]
     Length,
+    #[serde(rename(serialize = "contentFilter", deserialize = "content_filter"))]
     ContentFilter,
+    #[serde(rename(serialize = "error", deserialize = "error"))]
     Error,
 }
 
@@ -226,7 +237,7 @@ async fn run_chat_completion(
     messages: &mut Vec<ChatMessage>,
     on_event: &Channel<StreamEvent>,
     cwd: String,
-) -> Result<(), String> {
+) -> Result<ResponseUsage, String> {
     let client = reqwest::Client::new();
     let openrouter_api_key: String = match env::var("OPENROUTER_API_KEY") {
         Ok(env) => env,
@@ -234,6 +245,11 @@ async fn run_chat_completion(
     };
 
     let mut pending_tool_calls: Vec<ToolCall> = vec![];
+    let mut usage = ResponseUsage {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+    };
 
     loop {
         println!(
@@ -310,6 +326,11 @@ async fn run_chat_completion(
                                                     tool_calls: None,
                                                 })
                                                 .unwrap();
+
+                                            match msg.usage {
+                                                Some(u) => usage = u,
+                                                None => {}
+                                            };
                                         }
                                         if delta.content.is_none() && delta.tool_calls.is_some() {
                                             if let Some(tool_calls) = &delta.tool_calls {
@@ -334,6 +355,13 @@ async fn run_chat_completion(
                                             name: None,
                                             tool_calls: assistant_tool_calls.clone(),
                                         });
+
+                                        on_event
+                                            .send(StreamEvent::Finished {
+                                                usage: None,
+                                                reason: FinishReason::ToolCalls,
+                                            })
+                                            .unwrap();
                                     }
                                 }
                                 Err(e) => {
@@ -416,7 +444,8 @@ async fn run_chat_completion(
         }
     }
 
-    Ok(())
+    println!("USAGE: {:?}", usage);
+    Ok(usage)
 }
 
 fn read_file(cwd: &String, args: ReadFileToolArgs) -> Result<String, String> {
@@ -438,9 +467,27 @@ async fn call_llm(
 
     let result = run_chat_completion(&mut messages, &on_event, cwd).await;
 
-    on_event.send(StreamEvent::Finished {}).unwrap();
+    match result {
+        Ok(usage) => {
+            on_event
+                .send(StreamEvent::Finished {
+                    usage: Some(usage),
+                    reason: FinishReason::Stop,
+                })
+                .unwrap();
 
-    result
+            Ok(())
+        }
+        Err(e) => {
+            on_event
+                .send(StreamEvent::Finished {
+                    usage: None,
+                    reason: FinishReason::Error,
+                })
+                .unwrap();
+            Err(e.to_string())
+        }
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
