@@ -1,31 +1,14 @@
 # Aitetsu Development Plan
 
-## Current State Analysis
+### Rust backend event order
 
-### ✅ Working (Backend - Rust)
-
-- **Project directory management**: Can set/get project directories with Git discovery
-- **Fuzzy file search**: Working nucleo-matcher implementation for fast file finding
-- **LLM integration**: Streaming chat completions via OpenRouter API (Gemini model)
-- **Tool system**: `read_file` tool implementation for agent file access
-- **Tauri setup**: Basic app structure with proper plugins
-
-### 🔄 Partially Working (Frontend - React/TypeScript)
-
-- **Basic UI components**: Message, PromptArea, Header components exist
-- **File picker**: `@filename` fuzzy search functionality in prompt area
-- **Styling**: Catppuccin theme with Tailwind CSS setup
-- **Core structure**: React app with Tauri API integration
-
-### ❌ Broken/Missing (Frontend)
-
-- **Chat functionality**: Chat component has undefined variables (`history`, `last`, `toolActive`, `activeTool`)
-- **State management**: No global state management for messages/chat history
-- **Message streaming**: UI not connected to streaming events properly
-- **Error handling**: No error states or fallbacks
-- **Tool feedback**: No visual indication of active tools beyond console logs
-
-## Development Plan
+started
+delta assistant
+delta assistant
+finished tool_calls
+delta tool start
+delta tool finish
+finished stop
 
 ### Phase 1: Frontend Foundation (Priority: HIGH)
 
