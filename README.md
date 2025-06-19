@@ -4,6 +4,7 @@ Basically, worse version of "Claude Code", "Codex", "OpenCode" but it is mine!
 
 ### TODO
 
+- [ ] event handling is not reliable. if model immediately does tool calling i see empty message and then post-tool message
 - [ ] add `check_aws_lamda_logs` tool that can check CloudWatch logs of Lambda functions (for work)
 
 ### Demo

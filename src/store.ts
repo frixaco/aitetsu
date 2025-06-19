@@ -28,17 +28,18 @@ export type ChatMessage = {
   toolCalls?: string[];
 };
 
+export type ToolStatus =
+  | { name: null; active: false }
+  | { name: string; active: true };
+
 interface ChatState {
   systemPrompt: string;
   messages: ChatMessage[];
-  addMessage: (message: ChatMessage) => void;
   lastMessage: ChatMessage | null;
-  updateLastMessage: (lastMessage: ChatMessage | null) => void;
   generating: boolean;
   cwd: string | null;
-  setCwd: (cwd: string | null) => void;
   usage: TokenUsage;
-  updateUsage: (usage: TokenUsage) => void;
+  toolStatus: ToolStatus;
 }
 
 const SYSTEM_PROMPT: string = `You are a Senior Software Engineer with extensive knowledge in many programming languages, frameworks, libraries, design patterns and best practices.
@@ -48,28 +49,44 @@ Phase 1 - present the solution and a detailed plan.
 Phase 2 - call tools if they are needed to accomplish given task; otherwise omit Phase 2.
 `;
 
-export const useChatStore = create<ChatState>()((set) => ({
+export const useChatStore = create<ChatState>()(() => ({
   systemPrompt: SYSTEM_PROMPT,
-  setSystemPrompt: (systemPrompt: string) =>
-    set((_state) => ({ systemPrompt })),
   messages: [],
-  addMessage: (message: ChatMessage) =>
-    set((state) => ({ messages: [...state.messages, message] })),
-  setGenerating: (generating: boolean) => set((_state) => ({ generating })),
-  updateLastMessage: (lastMessage: ChatMessage | null) =>
-    set((_state) => ({ lastMessage })),
   lastMessage: null,
   generating: false,
+  toolStatus: {
+    name: null,
+    active: false,
+  },
   cwd: null,
-  setCwd: (cwd: string | null) => set((_state) => ({ cwd })),
   usage: {
     promptTokens: 0,
     completionTokens: 0,
     totalTokens: 0,
   },
-  updateUsage: (usage: TokenUsage) =>
-    set((_state) => ({ usage: { ...usage } })),
 }));
+
+export const setSystemPrompt = (systemPrompt: string) =>
+  useChatStore.setState({ systemPrompt });
+
+export const addMessage = (message: ChatMessage) =>
+  useChatStore.setState((state) => ({
+    messages: [...state.messages, message],
+  }));
+
+export const setGenerating = (generating: boolean) =>
+  useChatStore.setState({ generating });
+
+export const updateLastMessage = (lastMessage: ChatMessage | null) =>
+  useChatStore.setState({ lastMessage });
+
+export const setCwd = (cwd: string | null) => useChatStore.setState({ cwd });
+
+export const updateUsage = (usage: TokenUsage) =>
+  useChatStore.setState({ usage: { ...usage } });
+
+export const setToolStatus = (toolStatus: ToolStatus) =>
+  useChatStore.setState({ toolStatus });
 
 export type StreamEvent =
   | {
@@ -81,7 +98,7 @@ export type StreamEvent =
       data: {
         role: Role;
         content: string | null;
-        tool_calls: string[] | null;
+        toolCalls: string[] | null;
       };
     }
   | {

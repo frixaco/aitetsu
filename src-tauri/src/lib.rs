@@ -128,7 +128,7 @@ struct ReadFileToolArgs {
     path: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 struct ResponseUsage {
     #[serde(rename(serialize = "promptTokens", deserialize = "prompt_tokens"))]
     prompt_tokens: u32,
@@ -165,6 +165,7 @@ struct Choice {
     message: Option<Message>,
     delta: Option<Delta>,
     finish_reason: Option<FinishReason>,
+    usage: Option<ResponseUsage>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -227,7 +228,7 @@ struct ChatCompletionRequest {
     stream: bool,
     tools: serde_json::Value,
     // tool_choice: TODO: @edit_tool - to force certain tools
-    // usage: Option<Usage>,
+    usage: Option<Usage>,
     temperature: f32,
 }
 
@@ -258,10 +259,11 @@ async fn run_chat_completion(
         );
 
         let payload = ChatCompletionRequest {
-            model: "google/gemini-2.5-flash-preview:nitro".to_string(),
+            model: "google/gemini-2.5-flash-lite-preview-06-17".to_string(),
             messages: messages.clone(),
             stream: true,
             temperature: 0.0,
+            usage: Some(Usage { include: false }),
             tools: json!([
                 {
                     "type": "function",
@@ -307,7 +309,7 @@ async fn run_chat_completion(
                     for line in chunk.lines() {
                         if let Some(json_str) = line.strip_prefix("data: ") {
                             if json_str == "[DONE]" {
-                                println!("GOT [DONE]");
+                                println!("DONE");
                                 done = true;
                                 break;
                             }
@@ -319,6 +321,7 @@ async fn run_chat_completion(
                                     if let Some(delta) = &choice.delta {
                                         if let Some(text) = &delta.content {
                                             assistant_response.push_str(text);
+
                                             on_event
                                                 .send(StreamEvent::Delta {
                                                     role: Role::Assistant,
@@ -348,24 +351,30 @@ async fn run_chat_completion(
                                     }
 
                                     if choice.finish_reason.is_some() {
+                                        // Since streaming is finished, collect the text chunks and add it to messages
                                         messages.push(ChatMessage {
                                             role: Role::Assistant,
                                             content: assistant_response.clone(),
                                             tool_call_id: None,
                                             name: None,
+                                            // needed, apparently
                                             tool_calls: assistant_tool_calls.clone(),
                                         });
 
                                         on_event
                                             .send(StreamEvent::Finished {
-                                                usage: None,
-                                                reason: FinishReason::ToolCalls,
+                                                usage: msg.usage.clone(),
+                                                reason: choice
+                                                    .finish_reason
+                                                    .as_ref()
+                                                    .unwrap_or(&FinishReason::Stop)
+                                                    .clone(),
                                             })
                                             .unwrap();
                                     }
                                 }
                                 Err(e) => {
-                                    eprintln!("{}", e)
+                                    eprintln!("chunk errro: {}", e)
                                 }
                             }
                         }
@@ -399,8 +408,6 @@ async fn run_chat_completion(
                     })
                     .unwrap();
 
-                // println!("TOOL CALLING: {}", &tool_name);
-
                 let mut tool_message = ChatMessage {
                     role: Role::Tool,
                     tool_call_id: Some(tool_id.to_string()),
@@ -423,16 +430,8 @@ async fn run_chat_completion(
                         "textContent": content
                     }))
                     .unwrap();
-                    // println!("FINISHED READING");
                 }
 
-                on_event
-                    .send(StreamEvent::Delta {
-                        role: Role::Tool,
-                        content: None,
-                        tool_calls: None,
-                    })
-                    .unwrap();
                 messages.push(tool_message);
             }
             continue;
@@ -444,7 +443,6 @@ async fn run_chat_completion(
         }
     }
 
-    println!("USAGE: {:?}", usage);
     Ok(usage)
 }
 
@@ -465,29 +463,30 @@ async fn call_llm(
 
     let cwd = state.lock().unwrap().project_dir.clone();
 
-    let result = run_chat_completion(&mut messages, &on_event, cwd).await;
+    let _result = run_chat_completion(&mut messages, &on_event, cwd).await;
 
-    match result {
-        Ok(usage) => {
-            on_event
-                .send(StreamEvent::Finished {
-                    usage: Some(usage),
-                    reason: FinishReason::Stop,
-                })
-                .unwrap();
+    // match result {
+    //     Ok(usage) => {
+    //         on_event
+    //             .send(StreamEvent::Finished {
+    //                 usage: Some(usage),
+    //                 reason: FinishReason::Stop,
+    //             })
+    //             .unwrap();
 
-            Ok(())
-        }
-        Err(e) => {
-            on_event
-                .send(StreamEvent::Finished {
-                    usage: None,
-                    reason: FinishReason::Error,
-                })
-                .unwrap();
-            Err(e.to_string())
-        }
-    }
+    //         Ok(())
+    //     }
+    //     Err(e) => {
+    //         on_event
+    //             .send(StreamEvent::Finished {
+    //                 usage: None,
+    //                 reason: FinishReason::Error,
+    //             })
+    //             .unwrap();
+    //         Err(e.to_string())
+    //     }
+    // }
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

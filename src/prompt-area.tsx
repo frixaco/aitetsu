@@ -3,9 +3,7 @@ import { FileDirPicker } from "./file-dir-picker";
 import { useDebounce } from "./utils";
 import { useChat } from "./useChat";
 
-
 export function PromptArea() {
-
   const [inputValue, setInputValue] = useState("");
   const prompt = useDebounce(inputValue, 300);
 
@@ -22,7 +20,7 @@ export function PromptArea() {
     ? null
     : prompt.slice(prompt.lastIndexOf("@") + 1);
 
-  const [start] = useChat()
+  const { start } = useChat();
 
   return (
     <div className="h-32 relative w-full p-2">
@@ -51,7 +49,7 @@ export function PromptArea() {
             e.preventDefault();
             setInputValue("");
 
-            await start(prompt)
+            await start(prompt);
           }
         }}
         className="bg-ctp-base size-full px-2 py-1 text-ctp-pink border rounded border-ctp-surface2 focus:border-ctp-mauve outline-none"

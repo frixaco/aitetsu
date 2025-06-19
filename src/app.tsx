@@ -8,7 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 // import { marked } from "marked";
 import { PromptArea } from "./prompt-area";
 import { Chat } from "./chat";
-import { useChatStore } from "./store";
+import { setCwd } from "./store";
 import { Header } from "./header";
 
 const useGlobalShortcuts = () => {
@@ -20,7 +20,7 @@ const useGlobalShortcuts = () => {
           await invoke("set_project_dir", {
             path: cwd,
           });
-          useChatStore.getState().setCwd(cwd);
+          setCwd(cwd);
         }
       }
 
