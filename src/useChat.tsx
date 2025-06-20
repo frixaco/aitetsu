@@ -15,6 +15,7 @@ import { useCallback } from "react";
 
 export function useChat() {
   const start = useCallback(async (prompt: string) => {
+    console.log("PROMPT: ", prompt);
     const messages: ChatMessage[] = [
       {
         role: Role.SYSTEM,
@@ -67,6 +68,13 @@ export function useChat() {
       if (message.event === "delta") {
         if (message.data.role === Role.ASSISTANT) {
           if (useChatStore.getState().toolStatus.active) {
+            addMessage({
+              role: Role.TOOL,
+              content: `FINISHED RUNNING ${
+                useChatStore.getState().toolStatus.name
+              }`,
+            });
+
             setToolStatus({
               name: null,
               active: false,
@@ -79,10 +87,12 @@ export function useChat() {
         }
 
         if (message.data.role === Role.TOOL) {
-          addMessage({
-            role: lastMessage!.role,
-            content: lastMessage!.content || "",
-          });
+          if (lastMessage?.content) {
+            addMessage({
+              role: lastMessage.role,
+              content: lastMessage.content,
+            });
+          }
 
           setToolStatus({
             name: message.data.toolCalls![0],

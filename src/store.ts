@@ -42,11 +42,9 @@ interface ChatState {
   toolStatus: ToolStatus;
 }
 
-const SYSTEM_PROMPT: string = `You are a Senior Software Engineer with extensive knowledge in many programming languages, frameworks, libraries, design patterns and best practices.
+const SYSTEM_PROMPT: string = `You are a smart assistant with extensive knowledge in many programming languages, frameworks, libraries, design patterns and best practices.
 
-Answer in two phases.
-Phase 1 - present the solution and a detailed plan.
-Phase 2 - call tools if they are needed to accomplish given task; otherwise omit Phase 2.
+Always provide a concise summary after completing each task user asks you to do.
 `;
 
 export const useChatStore = create<ChatState>()(() => ({
