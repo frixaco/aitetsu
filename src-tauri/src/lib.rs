@@ -8,12 +8,18 @@ use nucleo_matcher::{
     pattern::{CaseMatching, Normalization, Pattern},
     Config, Matcher,
 };
+use reqwest::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tauri::{ipc::Channel, Manager, State};
 use walkdir::{DirEntry, WalkDir};
 
+mod types;
+use types::ResponseMessage;
+
 struct AppData {
+    openrouter_api_key: String,
+    openrouter_api_url: String,
     project_dir: String,
 }
 
@@ -24,6 +30,7 @@ fn set_project_dir(path: String, state: State<'_, Mutex<AppData>>) {
     println!("Set project dir to: {}", state.project_dir);
 }
 
+#[tauri::command]
 fn get_project_dir(path: Option<String>) -> String {
     let target_path = match path {
         Some(p) => p,
@@ -84,6 +91,7 @@ fn fuzzy_search(search_term: String, state: State<'_, Mutex<AppData>>) -> Vec<St
         .collect::<Vec<PathBuf>>()
         .iter()
         .map(|p| p.to_string_lossy().into_owned())
+        .filter(|p| !p.is_empty())
         .collect();
 
     let mut matcher = Matcher::new(Config::DEFAULT.match_paths());
@@ -92,409 +100,76 @@ fn fuzzy_search(search_term: String, state: State<'_, Mutex<AppData>>) -> Vec<St
     let results = Pattern::parse(&search_term, CaseMatching::Ignore, Normalization::Smart)
         .match_list(paths, &mut matcher);
 
+    println!("results: {:?}", results);
+
     results.into_iter().map(|(p, _s)| p).collect()
 }
 
-// model: "qwen/qwen3-235b-a22b:nitro",
-// model: "openai/gpt-4o-2024-11-20"),
-// model: "openai/gpt-4.1-mini"),
-// model: "google/gemini-2.5-pro-preview-05-06"),
-// model: "anthropic/claude-3.7-sonnet"),
-// model: "anthropic/claude-3.7-sonnet",
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase", tag = "event", content = "data")]
-enum StreamEvent {
-    #[serde(rename_all = "camelCase")]
-    Started {},
-    #[serde(rename_all = "camelCase")]
-    Delta {
-        role: Role,
-        content: Option<String>,
-        tool_calls: Option<Vec<String>>,
-    },
-    #[serde(rename_all = "camelCase")]
-    Finished {
-        usage: Option<ResponseUsage>,
-        reason: FinishReason,
-    },
-    Error {
-        message: String,
-    },
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ReadFileToolArgs {
-    path: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-struct ResponseUsage {
-    #[serde(rename(serialize = "promptTokens", deserialize = "prompt_tokens"))]
-    prompt_tokens: u32,
-    #[serde(rename(serialize = "completionTokens", deserialize = "completion_tokens"))]
-    completion_tokens: u32,
-    #[serde(rename(serialize = "totalTokens", deserialize = "total_tokens"))]
-    total_tokens: u32,
-}
-
-#[derive(Debug, Deserialize)]
-struct ChatCompletionResponse {
-    id: String,
-    choices: Vec<Choice>,
-    usage: Option<ResponseUsage>,
-}
-
-#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
-// #[serde(rename_all = "snake_case")] // tool_calls, stop, length, content_filter, error
-enum FinishReason {
-    #[serde(rename(serialize = "toolCalls", deserialize = "tool_calls"))]
-    ToolCalls,
-    #[serde(rename(serialize = "stop", deserialize = "stop"))]
-    Stop,
-    #[serde(rename(serialize = "length", deserialize = "length"))]
-    Length,
-    #[serde(rename(serialize = "contentFilter", deserialize = "content_filter"))]
-    ContentFilter,
-    #[serde(rename(serialize = "error", deserialize = "error"))]
-    Error,
-}
-
-#[derive(Debug, Deserialize)]
-struct Choice {
-    message: Option<Message>,
-    delta: Option<Delta>,
-    finish_reason: Option<FinishReason>,
-    usage: Option<ResponseUsage>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Delta {
-    role: String,
-    content: Option<String>,
-    tool_calls: Option<Vec<ToolCall>>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Message {
-    role: String,
-    content: Option<String>,
-    tool_calls: Option<Vec<ToolCall>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct ToolCall {
-    id: String,
-    #[serde(rename = "type")]
-    type_field: String,
-    function: FunctionCall,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct FunctionCall {
-    name: String,
-    arguments: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Usage {
-    include: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
-enum Role {
-    System,
-    User,
-    Assistant,
-    Tool,
-    Developer,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-struct ChatMessage {
-    role: Role,
-    content: String,
-    tool_call_id: Option<String>,
-    name: Option<String>,
-    tool_calls: Option<Vec<ToolCall>>,
-}
-
-#[derive(Serialize)]
-struct ChatCompletionRequest {
-    model: String,
-    messages: Vec<ChatMessage>,
-    stream: bool,
-    tools: serde_json::Value,
-    // tool_choice: TODO: @edit_tool - to force certain tools
-    usage: Option<Usage>,
-    temperature: f32,
-}
-
-const OPENROUTER_CHAT_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
-
-async fn run_chat_completion(
-    messages: &mut Vec<ChatMessage>,
-    on_event: &Channel<StreamEvent>,
-    cwd: String,
-) -> Result<ResponseUsage, String> {
-    let client = reqwest::Client::new();
-    let openrouter_api_key: String = match env::var("OPENROUTER_API_KEY") {
-        Ok(env) => env,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    let mut pending_tool_calls: Vec<ToolCall> = vec![];
-    let mut usage = ResponseUsage {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-    };
-
-    loop {
-        println!(
-            "MESSAGES: {:?}",
-            &messages.iter().map(|m| &m.role).collect::<Vec<&Role>>()
-        );
-
-        let payload = ChatCompletionRequest {
-            model: "google/gemini-2.5-flash-lite-preview-06-17".to_string(),
-            messages: messages.clone(),
-            stream: true,
-            temperature: 0.0,
-            usage: Some(Usage { include: false }),
-            tools: json!([
-                {
-                    "type": "function",
-                    "function": {
-                      "name": "read_file",
-                      "description":
-                        "Read a **text** file in the current workspace and return its complete UTF-8 contents as a string.",
-                      "parameters": {
-                        "type": "object",
-                        "properties": {
-                          "path": {
-                            "type": "string",
-                            "description":
-                              "Relative path from the project root to the file to read (e.g. \"src/index.ts\"). Must stay inside the workspace.",
-                          },
-                        },
-                        "required": ["path"],
-                      },
-                    },
-                }
-            ]),
-        };
-
-        let res = client
-            .post(OPENROUTER_CHAT_URL)
-            .header("Authorization", format!("Bearer {}", openrouter_api_key))
-            .header("Content-Type", "application/json")
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|err| format!("Request error: {}", err))?;
-
-        let mut stream = res.bytes_stream();
-        let mut done = false;
-
-        let mut assistant_response = String::new();
-        let mut assistant_tool_calls: Option<Vec<ToolCall>> = None;
-
-        while let Some(item) = stream.next().await {
-            match item {
-                Ok(bytes) => {
-                    let chunk = String::from_utf8_lossy(&bytes);
-                    for line in chunk.lines() {
-                        if let Some(json_str) = line.strip_prefix("data: ") {
-                            if json_str == "[DONE]" {
-                                println!("DONE");
-                                done = true;
-                                break;
-                            }
-
-                            match serde_json::from_str::<ChatCompletionResponse>(json_str) {
-                                Ok(msg) => {
-                                    println!("CHOICES: {:#?} {:#?}", &msg.choices, &msg.usage);
-                                    let choice = &msg.choices[0];
-                                    if let Some(delta) = &choice.delta {
-                                        if let Some(text) = &delta.content {
-                                            assistant_response.push_str(text);
-
-                                            on_event
-                                                .send(StreamEvent::Delta {
-                                                    role: Role::Assistant,
-                                                    content: Some(assistant_response.clone()),
-                                                    tool_calls: None,
-                                                })
-                                                .unwrap();
-
-                                            match msg.usage {
-                                                Some(u) => usage = u,
-                                                None => {}
-                                            };
-                                        }
-                                        if delta.content.is_none() && delta.tool_calls.is_some() {
-                                            if let Some(tool_calls) = &delta.tool_calls {
-                                                assistant_tool_calls = Some(tool_calls.clone());
-
-                                                for call in tool_calls.iter().cloned() {
-                                                    pending_tool_calls.push(call);
-                                                    // println!(
-                                                    //     "TOOL CALL DETECTED: {:#?}",
-                                                    //     &pending_tool_calls
-                                                    // );
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if choice.finish_reason.is_some() {
-                                        // Since streaming is finished, collect the text chunks and add it to messages
-                                        messages.push(ChatMessage {
-                                            role: Role::Assistant,
-                                            content: assistant_response.clone(),
-                                            tool_call_id: None,
-                                            name: None,
-                                            // needed, apparently
-                                            tool_calls: assistant_tool_calls.clone(),
-                                        });
-
-                                        on_event
-                                            .send(StreamEvent::Finished {
-                                                usage: msg.usage.clone(),
-                                                reason: choice
-                                                    .finish_reason
-                                                    .as_ref()
-                                                    .unwrap_or(&FinishReason::Stop)
-                                                    .clone(),
-                                            })
-                                            .unwrap();
-                                    }
-                                }
-                                Err(e) => {
-                                    eprintln!("chunk errro: {}", e)
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    eprintln!("stream error: {}", e);
-                    break;
-                }
-            }
-        }
-
-        if !pending_tool_calls.is_empty() {
-            for tool_call in pending_tool_calls.drain(..) {
-                let ToolCall {
-                    id: tool_id,
-                    function:
-                        FunctionCall {
-                            arguments: tool_args,
-                            name: tool_name,
-                            ..
-                        },
-                    ..
-                } = tool_call;
-
-                on_event
-                    .send(StreamEvent::Delta {
-                        role: Role::Tool,
-                        content: None,
-                        tool_calls: Some(vec![tool_name.to_string()]),
-                    })
-                    .unwrap();
-
-                let mut tool_message = ChatMessage {
-                    role: Role::Tool,
-                    tool_call_id: Some(tool_id.to_string()),
-                    name: Some(tool_name.to_string()),
-                    content: "".to_string(),
-                    tool_calls: None,
-                };
-
-                if tool_name == "read_file" {
-                    let args = match serde_json::from_str::<ReadFileToolArgs>(&tool_args) {
-                        Ok(a) => a,
-                        Err(e) => ReadFileToolArgs {
-                            path: e.to_string(),
-                        },
-                    };
-
-                    let content = read_file(&cwd, args);
-
-                    tool_message.content = serde_json::to_string(&json!({
-                        "textContent": content
-                    }))
-                    .unwrap();
-                }
-
-                messages.push(tool_message);
-            }
-            continue;
-        }
-
-        if done && pending_tool_calls.is_empty() {
-            println!("DONE DONE");
-            break;
-        }
-    }
-
-    Ok(usage)
-}
-
-fn read_file(cwd: &String, args: ReadFileToolArgs) -> Result<String, String> {
-    match fs::read_to_string(format!("{}/{}", cwd, args.path)) {
-        Ok(v) => Ok(v),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
 #[tauri::command]
-async fn call_llm(
-    mut messages: Vec<ChatMessage>,
+async fn run_agent(
+    mut messages: Vec<ResponseMessage>,
     on_event: Channel<StreamEvent>,
     state: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
-    on_event.send(StreamEvent::Started {}).unwrap();
-
     let cwd = state.lock().unwrap().project_dir.clone();
+    let openrouter_api_url = state.lock().unwrap().openrouter_api_url.clone();
+    let openrouter_api_key = state.lock().unwrap().openrouter_api_key.clone();
 
-    let _result = run_chat_completion(&mut messages, &on_event, cwd).await;
+    //     let client = reqwest::Client::new();
 
-    // match result {
-    //     Ok(usage) => {
-    //         on_event
-    //             .send(StreamEvent::Finished {
-    //                 usage: Some(usage),
-    //                 reason: FinishReason::Stop,
-    //             })
-    //             .unwrap();
+    //     let payload = ChatCompletionRequest {
+    //         // model: "google/gemini-2.5-flash-lite-preview-06-17".to_string(),
+    //         model: "anthropic/claude-sonnet-4".to_string(),
+    //         messages: messages.clone(),
+    //         stream: false,
+    //         temperature: 0.0,
+    //         usage: Some(Usage { include: false }),
+    //         tools: json!([
+    //             {
+    //                 "type": "function",
+    //                 "function": {
+    //                     "name": "read_file",
+    //                     "description":
+    //                     "Read a **text** file in the current workspace and return its complete UTF-8 contents as a string.",
+    //                     "parameters": {
+    //                     "type": "object",
+    //                     "properties": {
+    //                         "path": {
+    //                         "type": "string",
+    //                         "description":
+    //                             "Relative path from the project root to the file to read (e.g. \"src/index.ts\"). Must stay inside the workspace.",
+    //                         },
+    //                     },
+    //                     "required": ["path"],
+    //                     },
+    //                 },
+    //             }
+    //         ]),
+    //     };
 
-    //         Ok(())
-    //     }
-    //     Err(e) => {
-    //         on_event
-    //             .send(StreamEvent::Finished {
-    //                 usage: None,
-    //                 reason: FinishReason::Error,
-    //             })
-    //             .unwrap();
-    //         Err(e.to_string())
-    //     }
-    // }
+    //     let res = client
+    //         .post(OPENROUTER_CHAT_URL)
+    //         .header("Authorization", format!("Bearer {}", openrouter_api_key))
+    //         .header("Content-Type", "application/json")
+    //         .json(&payload)
+    //         .send()
+    //         .await
+    //         .map_err(|err| format!("Request error: {}", err))?;
+
+    //     let completion = res.json::<ChatCompletionResponse>().await;
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let openrouter_api_key = env::var("OPENROUTER_API_KEY").expect("OPENROUTER_API_KEY is not set");
+
     tauri::Builder::default()
         .setup(|app| {
             app.manage(Mutex::new(AppData {
                 project_dir: get_project_dir(None),
+                openrouter_api_key: openrouter_api_key,
+                openrouter_api_url: "https://openrouter.ai/api/v1/chat/completions".to_string(),
             }));
             Ok(())
         })
@@ -504,7 +179,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             set_project_dir,
-            call_llm,
+            get_project_dir,
+            run_agent,
             fuzzy_search
         ])
         .run(tauri::generate_context!())

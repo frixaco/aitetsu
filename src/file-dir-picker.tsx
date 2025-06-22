@@ -6,12 +6,11 @@ type Props = {
   onInput: (path: string) => void;
 };
 
-export function FileDirPicker({ searchTerm, onInput }: Props) {
+export function FileDirPicker({ searchTerm = "", onInput }: Props) {
   const [items, setItems] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
-      if (!searchTerm) return;
       const results: string[] = await invoke("fuzzy_search", { searchTerm });
       setItems(results);
       onInput(results[0]);

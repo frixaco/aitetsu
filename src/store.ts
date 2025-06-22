@@ -24,8 +24,8 @@ export enum FinishReason {
 
 export type ChatMessage = {
   role: Role;
-  content: string;
-  toolCalls?: string[];
+  content: string | null;
+  toolCalls?: string[] | null;
 };
 
 export type ToolStatus =
@@ -85,6 +85,26 @@ export const updateUsage = (usage: TokenUsage) =>
 
 export const setToolStatus = (toolStatus: ToolStatus) =>
   useChatStore.setState({ toolStatus });
+
+export type NonStreamEvent =
+  | { event: "started"; data: {} }
+  | {
+      event: "finished";
+      data: {
+        response?: {
+          role: Role;
+          content: string | null;
+          toolCalls: string[] | null;
+        };
+        reason: FinishReason;
+      };
+    }
+  | {
+      event: "usage";
+      data: {
+        usage: TokenUsage;
+      };
+    };
 
 export type StreamEvent =
   | {
