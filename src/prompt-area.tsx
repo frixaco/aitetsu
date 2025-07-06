@@ -23,7 +23,7 @@ export function PromptArea() {
   const { start } = useChat();
 
   return (
-    <div className="h-32 relative w-full p-2">
+    <div className="h-48 relative top-sh w-full px-6 py-4 bg-[#212121] ">
       {pickerActive && (
         <FileDirPicker
           searchTerm={searchTerm}
@@ -52,7 +52,7 @@ export function PromptArea() {
             await start(prompt);
           }
         }}
-        className="bg-ctp-base size-full px-2 py-1 text-ctp-pink border rounded border-ctp-surface2 focus:border-ctp-mauve outline-none"
+        className="bg-inherit size-full px-2 py-1 outline-none"
         autoFocus
       />
     </div>

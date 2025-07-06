@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+}
+
 html,
 body,
 #root {
@@ -16,4 +19,28 @@ body,
 
 textarea {
   resize: none;
+}
+
+.top-sh {
+  box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -webkit-box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -moz-box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+}
+
+.bottom-sh {
+  box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -webkit-box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -moz-box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+}
+
+.black-in {
+  box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+  -webkit-box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+  -moz-box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+}
+
+.light-out {
+box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
+-webkit-box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
+-moz-box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
 }

@@ -6,7 +6,13 @@ export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{html,js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        bg: "var(--bg)",
+        "bg-light": "var(--bg-light)",
+        txt: "var(--txt)",
+      },
+    },
   },
   plugins: [
     typography,

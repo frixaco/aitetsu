@@ -108,7 +108,7 @@ fn fuzzy_search(search_term: String, state: State<'_, Mutex<AppData>>) -> Vec<St
 #[tauri::command]
 async fn run_agent(
     mut messages: Vec<ResponseMessage>,
-    on_event: Channel<StreamEvent>,
+    // on_event: Channel<StreamEvent>,
     state: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
     let cwd = state.lock().unwrap().project_dir.clone();
