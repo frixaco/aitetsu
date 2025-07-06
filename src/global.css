@@ -40,7 +40,41 @@ textarea {
 }
 
 .light-out {
-box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
--webkit-box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
--moz-box-shadow: 1px 1px 1px 0px rgba(55,55,55,1);
+  box-shadow: 1px 1px 1px 0px rgba(55, 55, 55, 1);
+  -webkit-box-shadow: 1px 1px 1px 0px rgb(55, 55, 55);
+  -moz-box-shadow: 1px 1px 1px 0px rgba(55, 55, 55, 1);
+}
+
+.light-out-2 {
+  box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+}
+
+.light-in-2 {
+  box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+  -webkit-box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+  -moz-box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+}
+
+.light-in-out-2 {
+  box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+
+  -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+}
+
+.light-in-out-3 {
+  /* Non-inset shadow (remains the same) */
+  box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    /* Inset shadow with pure white color */ inset 0px 1px 1px 1px
+      rgba(255, 255, 255, 1);
+
+  -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(255, 255, 255, 1);
+  -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(255, 255, 255, 1);
 }

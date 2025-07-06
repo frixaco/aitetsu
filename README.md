@@ -1,5 +1,9 @@
 ## My personal AI assistant in my terminal
 
+### RE-DESIGN NOTES
+
+- [ ] Have timeline just like that recorder app design.
+
 Basically, worse version of "Claude Code", "Codex", "OpenCode" but it is mine!
 
 ### TODO

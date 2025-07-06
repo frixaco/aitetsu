@@ -1,6 +1,5 @@
 import { useShallow } from "zustand/shallow";
 import { useChatStore } from "./store";
-import { Aitetsu } from "./aitetsu";
 
 // const toOptionalFixed = (num, digits) =>
 //   `${Number.parseFloat(num.toFixed(digits))}`;
@@ -10,7 +9,7 @@ export function Header() {
 
   const contextWindow = 1_000_000;
   const usage = useChatStore(useShallow((state) => state.usage));
-  const totalTokensUsed = 16343; //usage.totalTokens;
+  const totalTokensUsed = 500_500; //usage.totalTokens;
   const usagePercent = Math.ceil((100 * totalTokensUsed) / contextWindow);
 
   return (
@@ -33,11 +32,11 @@ export function Header() {
         </p>
       </div>
 
-      <div className="bg-[#0c0c0c] light-out px-3 py-1 rounded-md justify-end items-center flex gap-3 pointer-events-auto">
+      <div className="bg-[#0c0c0c] light-out-2 px-3 py-1 rounded-md justify-end items-center flex gap-3 pointer-events-auto">
         <ContextWindowStatus percent={usagePercent} />
 
         <span
-          className="text-[#868686] cursor-help text-xs font-mono"
+          className="text-[#666666] cursor-help text-xs font-mono"
           title={`${totalTokensUsed} / ${contextWindow} tokens used`}
         >
           {usagePercent}%
@@ -59,16 +58,18 @@ function ContextWindowStatus({ percent }: { percent: number }) {
     <div className="flex gap-[0.125rem]">
       {Array(activeBars)
         .fill(0)
-        .map((_,i) => (
-          <div key={i} className="h-2 w-px bg-[#6e6e6e]"></div>
+        .map((_, i) => (
+          <div key={i} className="h-2 w-px bg-[#666666]"></div>
         ))}
 
-      <div className="h-2 w-0.5 bg-[#e4e4e4]"></div>
+      {/* TODO: as it fills up, turn it into red more */}
+      <div className="h-2 w-0.5 bg-[#666666]"></div>
+      {/* <div className="h-2 w-0.5 bg-[#f7f7f7]"></div> */}
 
       {Array(nonActiveBars)
         .fill(0)
         .map((_, i) => (
-          <div key={i} className="h-2 w-px bg-[#272727]"></div>
+          <div key={i} className="h-2 w-px bg-[#2d2d2d]"></div>
         ))}
     </div>
   );
