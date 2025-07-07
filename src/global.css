@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+@keyframes blip {
+  0%, 70%, 100% { opacity: 1; }
+  15%, 55% { opacity: 0.3; }
 }
 
 html,
@@ -68,13 +70,21 @@ textarea {
 }
 
 .light-in-out-3 {
-  /* Non-inset shadow (remains the same) */
   box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
-    /* Inset shadow with pure white color */ inset 0px 1px 1px 1px
-      rgba(255, 255, 255, 1);
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
 
   -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
-    inset 0px 1px 1px 1px rgba(255, 255, 255, 1);
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
   -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
-    inset 0px 1px 1px 1px rgba(255, 255, 255, 1);
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
+}
+
+.light-out-black-in {
+  box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
+
+  -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
+  -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
 }

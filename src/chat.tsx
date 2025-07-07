@@ -8,7 +8,7 @@ export function Chat() {
   const lastMessage = useChatStore(useShallow((state) => state.lastMessage));
 
   return (
-    <div className="bg-black-in flex flex-col gap-2 flex-1 text-sm overflow-y-auto p-2">
+    <div className="light-out-black-in bg-[#0c0c0c] rounded-2xl flex flex-col gap-2 flex-1 text-sm overflow-y-auto p-2">
       {messages.map((m, i) => (
         <Message key={i} data={m} streaming={false} />
       ))}

@@ -12,6 +12,9 @@ export default {
         "bg-light": "var(--bg-light)",
         txt: "var(--txt)",
       },
+      animation: {
+        blip: "blip 1.5s infinite",
+      },
     },
   },
   plugins: [

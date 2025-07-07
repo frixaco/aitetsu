@@ -2,6 +2,7 @@
 
 ### RE-DESIGN NOTES
 
+- [ ] Ask U.S. Graphics Company
 - [ ] Have timeline just like that recorder app design.
 
 Basically, worse version of "Claude Code", "Codex", "OpenCode" but it is mine!

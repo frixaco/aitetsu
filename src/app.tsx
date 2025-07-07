@@ -82,7 +82,7 @@ function App() {
   useGlobalSettings();
 
   return (
-    <main className="flex flex-col h-full font-sans">
+    <main className="flex flex-col h-full font-sans px-2 pb-2 gap-2">
       <Header />
 
       <Chat />

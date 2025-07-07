@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FileDirPicker } from "./file-dir-picker";
 import { useDebounce } from "./utils";
 import { useChat } from "./useChat";
+import { twMerge } from "tailwind-merge";
 
 export function PromptArea() {
   const [inputValue, setInputValue] = useState("");
@@ -21,9 +22,10 @@ export function PromptArea() {
     : prompt.slice(prompt.lastIndexOf("@") + 1);
 
   const { start } = useChat();
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
-    <div className="h-48 relative top-sh w-full p-3 bg-[#212121]">
+    <div className="h-48 relative w-full bg-[#212121]">
       {pickerActive && (
         <FileDirPicker
           searchTerm={searchTerm}
@@ -31,9 +33,9 @@ export function PromptArea() {
         />
       )}
 
-      <div className="flex h-full gap-3">
+      <div className="flex h-full gap-1">
         <textarea
-          className="font-semibold drop-shadow-sm border-black border-4 flex-1 h-full p-3 font-mono text-sm text-[#c0b930] outline-none rounded-xl light-in-out-2 black-in bg-[#282828]"
+          className="font-semibold drop-shadow-sm border-black border-4 flex-1 h-full p-2 font-mono text-[#c0b930] outline-none rounded-xl light-in-out-3 black-in bg-[#121212]"
           // className="drop-shadow-sm size-full p-3 font-mono text-sm text-[#ffffff] outline-none rounded-xl light-out-2 black-in bg-[#111111]"
           // className="drop-shadow-sm size-full border-black border-4 p-3 font-mono text-sm text-[#ffffff] tracking-wider caret-[#30c03c] outline-none rounded-xl light-in-out-2 black-in bg-[#212121]"
           // className="size-full border-black border-4 px-4 font-mono text-sm text-[#c6c6c6] tracking-wide caret-[#e4e4e4] py-4 outline-none rounded-xl light-in-out-2 black-in bg-[#212121]"
@@ -98,10 +100,18 @@ export function PromptArea() {
           <button className="flex-1">HISTORY</button>
         </div> */}
 
-        <div className="flex flex-col gap-1 text-[#e4e4e4]">
-          <button className="size-16 p-4 flex gap-1 items-center justify-center bg-[#282828] light-in-out-2 rounded-full border-black border-4">
-            {/* record */}
-            <svg
+        {/* <div className="flex flex-col gap-1 text-[#e4e4e4]">
+          <button
+            className={twMerge(
+              "group py-3 px-2 flex flex-col items-center justify-center bg-[#282828] rounded-xl border-black border-4",
+              isPressed ? "light-out-black-in" : "light-in-out-2"
+            )}
+            onMouseDown={() => setIsPressed(true)}
+            onMouseUp={() => setIsPressed(false)}
+            onMouseLeave={() => setIsPressed(false)}
+          > */}
+        {/* record */}
+        {/* <svg
               className="fill-[#c03031]"
               xmlns="http://www.w3.org/2000/svg"
               width={24}
@@ -109,21 +119,36 @@ export function PromptArea() {
               viewBox="0 0 24 24"
             >
               <path d="M21 12a9 9 0 1 1-18.001-.001A9 9 0 0 1 21 12"></path>
-            </svg>
+            </svg> */}
 
-            {/* play */}
-            {/* <svg
-              className="fill-[#e4e4e4]"
+        {/* arrows */}
+        {/* <svg
+              className={twMerge(
+                "fill-[#ffffff] -rotate-90 transition-transform ease-out duration-200 size-6",
+                isPressed && "scale-[99%] -translate-y-px"
+              )}
               xmlns="http://www.w3.org/2000/svg"
               width={24}
               height={24}
               viewBox="0 0 24 24"
             >
-              <path d="M9.42 2.31A1.502 1.502 0 0 0 7.001 3.5v17c0 .572.325 1.09.839 1.35c.513.252 1.13.19 1.58-.16l11-8.5a1.5 1.5 0 0 0 .583-1.19a1.51 1.51 0 0 0-.583-1.19z"></path>
+              <path d="M12.6 3.09a1 1 0 0 0-.59.912v16a1 1 0 0 0 1.66.747l9-8a1 1 0 0 0 0-1.494l-9-8a.99.99 0 0 0-1.07-.165m-12.01 0a1 1 0 0 0-.59.912v16a1 1 0 0 0 1.66.747l9-8a1 1 0 0 0 0-1.494l-9-8A.99.99 0 0 0 .59 3.09"></path>
             </svg> */}
 
-            {/* stop */}
-            {/* <svg
+        {/* play */}
+        {/* <svg
+              className="fill-[#e4e4e4] group-active:fill-[#dbdbdb] -rotate-90 leading-none"
+              xmlns="http://www.w3.org/2000/svg"
+              width={24}
+              height={24}
+              viewBox="0 0 16 24"
+            >
+              <path d="M9.42 2.31A1.502 1.502 0 0 0 7.001 3.5v17c0 .572.325 1.09.839 1.35c.513.252 1.13.19 1.58-.16l11-8.5a1.5 1.5 0 0 0 .583-1.19a1.51 1.51 0 0 0-.583-1.19z"></path>
+            </svg>
+            <span className="text-center text-xs -mt-2">SEND</span> */}
+
+        {/* stop */}
+        {/* <svg
               className="fill-[#e4e4e4]"
               xmlns="http://www.w3.org/2000/svg"
               width={24}
@@ -135,8 +160,8 @@ export function PromptArea() {
               ></path>
             </svg> */}
 
-            {/* cmd */}
-            {/* <svg
+        {/* cmd */}
+        {/* <svg
               className="fill-[#e4e4e4] inline"
               xmlns="http://www.w3.org/2000/svg"
               width={16}
@@ -150,8 +175,8 @@ export function PromptArea() {
               ></path>
             </svg> */}
 
-            {/* enter */}
-            {/* <svg
+        {/* enter */}
+        {/* <svg
               className="fill-[#e4e4e4]"
               xmlns="http://www.w3.org/2000/svg"
               width={16}
@@ -160,10 +185,9 @@ export function PromptArea() {
             >
               <path d="M16 4.5a.5.5 0 0 0-1 0V8H1.7l3.15-3.15a.5.5 0 0 0-.707-.707l-4 4a.5.5 0 0 0 0 .707l4 4a.5.5 0 0 0 .707-.707L1.7 8.993H15a1 1 0 0 0 1-1v-3.5z"></path>
             </svg> */}
-          </button>
-          <span className="text-center text-sm">SEND</span>
-          {/* <span className="text-center text-sm">STOP</span> */}
-        </div>
+        {/* </button> */}
+        {/* <span className="text-center text-sm">STOP</span> */}
+        {/* </div> */}
       </div>
     </div>
   );
