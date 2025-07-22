@@ -1,17 +1,17 @@
-import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { invoke } from '@tauri-apps/api/core';
+import { useEffect, useState } from 'react';
 
 type Props = {
   searchTerm: string | null;
   onInput: (path: string) => void;
 };
 
-export function FileDirPicker({ searchTerm = "", onInput }: Props) {
+export function FileDirPicker({ searchTerm = '', onInput }: Props) {
   const [items, setItems] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
-      const results: string[] = await invoke("fuzzy_search", { searchTerm });
+      const results: string[] = await invoke('fuzzy_search', { searchTerm });
       setItems(results);
       onInput(results[0]);
     })();
@@ -23,7 +23,7 @@ export function FileDirPicker({ searchTerm = "", onInput }: Props) {
         <div>No results</div>
       ) : (
         items.map((item, idx) => {
-          const isDirectory = item.endsWith("/");
+          const isDirectory = item.endsWith('/');
           return (
             <button
               key={idx}
@@ -62,7 +62,7 @@ export function FileDirPicker({ searchTerm = "", onInput }: Props) {
                 </svg>
               )}
               <p
-                className={isDirectory ? "text-ctp-blue" : "text-ctp-lavender"}
+                className={isDirectory ? 'text-ctp-blue' : 'text-ctp-lavender'}
               >
                 {item}
               </p>

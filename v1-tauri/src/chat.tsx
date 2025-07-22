@@ -1,6 +1,6 @@
-import { Message } from "./message";
-import { useChatStore } from "./store";
-import { useShallow } from "zustand/shallow";
+import { Message } from './message';
+import { useChatStore } from './store';
+import { useShallow } from 'zustand/shallow';
 
 export function Chat() {
   const messages = useChatStore(useShallow((state) => state.messages));

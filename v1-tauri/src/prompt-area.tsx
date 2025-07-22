@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { FileDirPicker } from "./file-dir-picker";
-import { useDebounce } from "./utils";
-import { useChat } from "./useChat";
-import { twMerge } from "tailwind-merge";
+import { useEffect, useRef, useState } from 'react';
+import { FileDirPicker } from './file-dir-picker';
+import { useDebounce } from './utils';
+import { useChat } from './useChat';
+import { twMerge } from 'tailwind-merge';
 
 export function PromptArea() {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const prompt = useDebounce(inputValue, 300);
 
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
@@ -14,12 +14,12 @@ export function PromptArea() {
     promptInputRef.current?.focus();
   }, []);
 
-  const [pickerValue, setPickerValue] = useState("");
+  const [pickerValue, setPickerValue] = useState('');
 
-  const pickerActive = prompt.lastIndexOf("@") !== -1;
+  const pickerActive = prompt.lastIndexOf('@') !== -1;
   const searchTerm = !pickerActive
     ? null
-    : prompt.slice(prompt.lastIndexOf("@") + 1);
+    : prompt.slice(prompt.lastIndexOf('@') + 1);
 
   const { start } = useChat();
   const [isPressed, setIsPressed] = useState(false);
@@ -46,16 +46,16 @@ export function PromptArea() {
           onKeyDown={async (e) => {
             const key = e.key;
 
-            if (key === "Enter" && pickerActive) {
+            if (key === 'Enter' && pickerActive) {
               e.preventDefault();
-              const i = inputValue.lastIndexOf("@");
+              const i = inputValue.lastIndexOf('@');
               const path = inputValue.slice(0, i) + pickerValue;
               setInputValue(path);
             }
 
-            if (e.metaKey && key === "Enter") {
+            if (e.metaKey && key === 'Enter') {
               e.preventDefault();
-              setInputValue("");
+              setInputValue('');
 
               await start(prompt);
             }

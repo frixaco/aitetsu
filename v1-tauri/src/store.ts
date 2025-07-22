@@ -1,11 +1,11 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
 export enum Role {
-  SYSTEM = "system",
-  USER = "user",
-  ASSISTANT = "assistant",
-  TOOL = "tool",
-  DEVELOPER = "developer",
+  SYSTEM = 'system',
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  TOOL = 'tool',
+  DEVELOPER = 'developer',
 }
 
 export type TokenUsage = {
@@ -15,11 +15,11 @@ export type TokenUsage = {
 };
 
 export enum FinishReason {
-  ToolCalls = "toolCalls",
-  Stop = "stop",
-  Length = "length",
-  ContentFilter = "contentFilter",
-  Error = "error",
+  ToolCalls = 'toolCalls',
+  Stop = 'stop',
+  Length = 'length',
+  ContentFilter = 'contentFilter',
+  Error = 'error',
 }
 
 export type ChatMessage = {
@@ -87,9 +87,9 @@ export const setToolStatus = (toolStatus: ToolStatus) =>
   useChatStore.setState({ toolStatus });
 
 export type NonStreamEvent =
-  | { event: "started"; data: {} }
+  | { event: 'started'; data: {} }
   | {
-      event: "finished";
+      event: 'finished';
       data: {
         response?: {
           role: Role;
@@ -100,7 +100,7 @@ export type NonStreamEvent =
       };
     }
   | {
-      event: "usage";
+      event: 'usage';
       data: {
         usage: TokenUsage;
       };
@@ -108,11 +108,11 @@ export type NonStreamEvent =
 
 export type StreamEvent =
   | {
-      event: "started";
+      event: 'started';
       data: {};
     }
   | {
-      event: "delta";
+      event: 'delta';
       data: {
         role: Role;
         content: string | null;
@@ -120,7 +120,7 @@ export type StreamEvent =
       };
     }
   | {
-      event: "finished";
+      event: 'finished';
       data: {
         usage?: TokenUsage;
         reason: FinishReason;

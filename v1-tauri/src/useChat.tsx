@@ -1,4 +1,4 @@
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from '@tauri-apps/api/core';
 import {
   addMessage,
   ChatMessage,
@@ -10,13 +10,13 @@ import {
   updateLastMessage,
   updateUsage,
   useChatStore,
-} from "./store";
-import { useCallback } from "react";
+} from './store';
+import { useCallback } from 'react';
 
 export function useChat() {
   const start = useCallback(async (prompt: string) => {
     const history = useChatStore.getState().messages;
-    console.log("HISTORY: ", history);
+    console.log('HISTORY: ', history);
 
     const messages: ChatMessage[] = [
       {
@@ -42,15 +42,15 @@ export function useChat() {
 
       const lastMessage = useChatStore.getState().lastMessage;
 
-      if (message.event === "started") {
+      if (message.event === 'started') {
         setGenerating(true);
       }
 
-      if (message.event === "usage") {
+      if (message.event === 'usage') {
         updateUsage(message.data.usage);
       }
 
-      if (message.event === "finished") {
+      if (message.event === 'finished') {
         if (message.data.reason === FinishReason.Stop) {
           setGenerating(false);
           setToolStatus({
@@ -72,7 +72,7 @@ export function useChat() {
           addMessage({
             role: Role.ASSISTANT,
             content:
-              "CALLING TOOLS: " + message.data.response?.toolCalls!.join(", "),
+              'CALLING TOOLS: ' + message.data.response?.toolCalls!.join(', '),
           });
         }
       }
@@ -119,7 +119,7 @@ export function useChat() {
       // }
     };
 
-    await invoke("run_agent", {
+    await invoke('run_agent', {
       messages,
       onEvent,
     });

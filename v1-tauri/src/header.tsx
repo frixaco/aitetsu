@@ -1,6 +1,6 @@
-import { useShallow } from "zustand/shallow";
-import { useChatStore } from "./store";
-import { twMerge } from "tailwind-merge";
+import { useShallow } from 'zustand/shallow';
+import { useChatStore } from './store';
+import { twMerge } from 'tailwind-merge';
 
 // const toOptionalFixed = (num, digits) =>
 //   `${Number.parseFloat(num.toFixed(digits))}`;
@@ -27,8 +27,8 @@ export function Header() {
         <span
           className={twMerge(
             // "size-[0.875rem] bg-[#c03031]",
-            "size-[0.875rem] bg-[#c03031] opacity-30 rounded-full",
-            isRunning && "bg-[#c03031] animate-blip"
+            'size-[0.875rem] bg-[#c03031] opacity-30 rounded-full',
+            isRunning && 'bg-[#c03031] animate-blip'
             // isRunning && "bg-[#35c030]"
           )}
         ></span>
@@ -48,9 +48,9 @@ export function Header() {
 
         <span
           className={twMerge(
-            "text-[#aaaaaa] cursor-help text-xs",
-            usagePercent > 70 && "text-[#c03031]",
-            usagePercent > 50 && usagePercent < 70 && "text-[#c06a30]"
+            'text-[#aaaaaa] cursor-help text-xs',
+            usagePercent > 70 && 'text-[#c03031]',
+            usagePercent > 50 && usagePercent < 70 && 'text-[#c06a30]'
           )}
           title={`${totalTokensUsed} / ${contextWindow} tokens used`}
         >
@@ -80,9 +80,9 @@ function ContextWindowStatus({ percent }: { percent: number }) {
       {/* TODO: as it fills up, turn it into red more */}
       <div
         className={twMerge(
-          "h-2 w-0.5 bg-[#aaaaaa]",
-          percent > 70 && "bg-[#c03031]",
-          percent > 50 && percent < 70 && "bg-[#c06a30]"
+          'h-2 w-0.5 bg-[#aaaaaa]',
+          percent > 70 && 'bg-[#c03031]',
+          percent > 50 && percent < 70 && 'bg-[#c06a30]'
         )}
       ></div>
       {/* <div className="h-2 w-0.5 bg-[#f7f7f7]"></div> */}

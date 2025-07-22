@@ -1,0 +1,31 @@
+{
+  "name": "aitetsu",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "format": "biome format --write",
+    "lint": "biome lint --write"
+  },
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "2.1.2",
+    "@types/bun": "latest",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "lefthook": "^1.12.2",
+    "ultracite": "5.0.47",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.0-beta"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.129.2",
+    "@tanstack/react-start": "^1.129.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "vite": "^7.0.5"
+  }
+}

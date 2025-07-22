@@ -1,4 +1,4 @@
-import { ChatMessage, Role } from "./store";
+import { ChatMessage, Role } from './store';
 
 type Props = {
   streaming: boolean;
@@ -50,8 +50,8 @@ export function Message({ data, streaming }: Props) {
 
       <pre
         className={
-          "whitespace-pre-wrap " +
-          (data.role === Role.TOOL ? "text-ctp-green" : "text-ctp-subtext0")
+          'whitespace-pre-wrap ' +
+          (data.role === Role.TOOL ? 'text-ctp-green' : 'text-ctp-subtext0')
         }
       >
         {data.content}

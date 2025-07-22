@@ -1,10 +1,10 @@
-import fs from "fs/promises";
-import { streamText, tool, type CoreMessage } from "ai";
-import { z } from "zod";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { createInterface } from "node:readline/promises";
-import os from "os";
-import chalk from "chalk";
+import fs from 'fs/promises';
+import { streamText, tool, type CoreMessage } from 'ai';
+import { z } from 'zod';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createInterface } from 'node:readline/promises';
+import os from 'os';
+import chalk from 'chalk';
 
 // TODO: FORCE USE TOOLS VIA @EDIT/UPDATE FILE instead of this
 const getSystemPrompt =
@@ -31,82 +31,82 @@ You have following tools at your disposal:
 `;
 
 const readFile = tool({
-  description: "Return full text of a file",
+  description: 'Return full text of a file',
   parameters: z.object({
-    path: z.string().describe("Path of the file relative to current directory"),
+    path: z.string().describe('Path of the file relative to current directory'),
   }),
   execute: async ({ path }) => {
-    const fileContent = await fs.readFile(path, "utf8");
+    const fileContent = await fs.readFile(path, 'utf8');
     return {
-      status: "success",
+      status: 'success',
       message: fileContent,
     };
   },
 });
 
 const writeFile = tool({
-  description: "Create or replace file content",
+  description: 'Create or replace file content',
   parameters: z.object({
-    path: z.string().describe("Path of the file relative to current directory"),
-    newContent: z.string().describe("Full updated content of the file"),
+    path: z.string().describe('Path of the file relative to current directory'),
+    newContent: z.string().describe('Full updated content of the file'),
   }),
   execute: async ({ path, newContent }) => {
-    await fs.writeFile(path, newContent, "utf8");
+    await fs.writeFile(path, newContent, 'utf8');
     return {
-      status: "success",
-      message: "Successfully replaced file with updated content",
+      status: 'success',
+      message: 'Successfully replaced file with updated content',
     };
   },
 });
 
 const editFile = tool({
-  description: "Apply edits to a file",
+  description: 'Apply edits to a file',
   parameters: z.object({
     path: z
       .string()
       .describe(
         "File path **relative to the current working directory** (e.g. './src/index.ts'). " +
-          "Assumes the directory already exists.",
+          'Assumes the directory already exists.'
       ),
 
     searchContent: z
       .string()
       .describe(
-        "The **shortest snippet that is guaranteed to be unique** inside the file. " +
-          "If a line appears more than once, include a few context lines before/after so the full string occurs only once. Otherwise tool will fail.",
+        'The **shortest snippet that is guaranteed to be unique** inside the file. ' +
+          'If a line appears more than once, include a few context lines before/after so the full string occurs only once. Otherwise tool will fail.'
       ),
 
     replaceContent: z
       .string()
       .describe(
-        "Text that will **replace the first (and only) occurrence** of `searchContent`.",
+        'Text that will **replace the first (and only) occurrence** of `searchContent`.'
       ),
   }),
   execute: async ({ path, searchContent, replaceContent }) => {
     function escapeRegExp(str: string) {
-      return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    const original = await fs.readFile(path, "utf8"); //  ← change #1
+    const original = await fs.readFile(path, 'utf8'); //  ← change #1
 
     const matches = [
-      ...original.matchAll(new RegExp(escapeRegExp(searchContent), "g")),
+      ...original.matchAll(new RegExp(escapeRegExp(searchContent), 'g')),
     ];
     if (matches.length === 0) {
       throw new Error(`editFile: \`searchContent\` not found in “${path}”.`);
     }
     if (matches.length > 1) {
       throw new Error(
-        `editFile: \`searchContent\` occurs ${matches.length} times in “${path}” – it must be unique.`,
+        `editFile: \`searchContent\` occurs ${matches.length} times in “${path}” – it must be unique.`
       );
     }
 
     const updated = original.replace(searchContent, replaceContent);
-    await fs.writeFile(path, updated, "utf8");
+    await fs.writeFile(path, updated, 'utf8');
 
     return {
-      status: "success",
-      message: "Successfully applied the edit",
+      status: 'success',
+      message: 'Successfully applied the edit',
     };
   },
 });
@@ -120,13 +120,13 @@ async function runAgent(messages: CoreMessage[]): Promise<CoreMessage[]> {
     toolCallStreaming: true,
     maxSteps: 25,
     temperature: 0,
-    model: openrouter.chat("qwen/qwen3-235b-a22b"),
+    model: openrouter.chat('qwen/qwen3-235b-a22b'),
     // model: openrouter.chat("google/gemini-2.5-flash-preview"),
     // model: openrouter.chat("openai/gpt-4o-2024-11-20"),
     // model: openrouter.chat("openai/gpt-4.1-mini"),
     // model: openrouter.chat("google/gemini-2.5-pro-preview-03-25"),
     // model: openrouter.chat("anthropic/claude-3.7-sonnet"),
-    toolChoice: "auto",
+    toolChoice: 'auto',
     messages,
     tools: {
       readFile,
@@ -135,29 +135,29 @@ async function runAgent(messages: CoreMessage[]): Promise<CoreMessage[]> {
     },
     onChunk: ({ chunk }) => {
       switch (chunk.type) {
-        case "text-delta":
+        case 'text-delta':
           process.stdout.write(chalk.green(chunk.textDelta));
           break;
 
-        case "tool-call":
+        case 'tool-call':
           break;
 
-        case "tool-call-streaming-start":
+        case 'tool-call-streaming-start':
           console.log(`\n- Calling ${chunk.toolName} tool...`);
           break;
 
-        case "tool-call-delta":
+        case 'tool-call-delta':
           process.stdout.moveCursor(0, -1);
           process.stdout.clearLine(1);
           process.stdout.cursorTo(0);
           process.stdout.write(
-            chalk.greenBright(`- ${chunk.toolName} tool is running...\n`),
+            chalk.greenBright(`- ${chunk.toolName} tool is running...\n`)
           );
           break;
 
-        case "tool-result":
+        case 'tool-result':
           let message = `- ${chunk.toolName} tool finished running\n`;
-          if (chunk.result.status !== "success") {
+          if (chunk.result.status !== 'success') {
             message = `- ${chunk.toolName} tool failed to complete\n`;
           }
 
@@ -191,8 +191,8 @@ const lineReader = createInterface({
 
 process.stdin.setRawMode(true);
 
-lineReader.on("SIGINT", () => {
-  console.log(chalk.yellow("\nAlways ready to eat your tokens!"));
+lineReader.on('SIGINT', () => {
+  console.log(chalk.yellow('\nAlways ready to eat your tokens!'));
   lineReader.close();
   process.exit(0);
 });
@@ -202,13 +202,13 @@ async function main() {
   console.log(chalk.green.bold(`Ready to help, ${username}!`));
 
   let messages: CoreMessage[] = [
-    { role: "system", content: getSystemPrompt() },
+    { role: 'system', content: getSystemPrompt() },
   ];
 
   while (true) {
-    const prompt = (await lineReader.question(chalk.blue("> "))).trim();
+    const prompt = (await lineReader.question(chalk.blue('> '))).trim();
     if (
-      ["quit", "exit", "end", "/quit", "/exit"].includes(prompt.toLowerCase())
+      ['quit', 'exit', 'end', '/quit', '/exit'].includes(prompt.toLowerCase())
     ) {
       break;
     }
@@ -221,7 +221,7 @@ async function main() {
 
     try {
       messages.push({
-        role: "user",
+        role: 'user',
         content: prompt,
       });
 
@@ -229,9 +229,9 @@ async function main() {
     } catch (error) {
       console.log(chalk.red(error));
 
-      messages = [{ role: "system", content: getSystemPrompt() }];
+      messages = [{ role: 'system', content: getSystemPrompt() }];
 
-      console.log("Resetting conversation");
+      console.log('Resetting conversation');
     } finally {
       process.stdin.resume();
     }
