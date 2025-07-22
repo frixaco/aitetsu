@@ -22,10 +22,14 @@
     "typescript": "^5.9.0-beta"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-router": "^1.129.2",
     "@tanstack/react-start": "^1.129.2",
+    "@xyflow/react": "^12.8.2",
+    "ai": "^4.3.19",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.11",
     "vite": "^7.0.5"
   }
 }
