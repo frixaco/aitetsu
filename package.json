@@ -10,26 +10,25 @@
   },
   "private": true,
   "devDependencies": {
-    "@biomejs/biome": "2.1.2",
-    "@types/bun": "latest",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "lefthook": "^1.12.2",
-    "ultracite": "5.0.47",
+    "@biomejs/biome": "2.2.0",
+    "@types/bun": "1.2.20",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "ultracite": "5.1.8",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "peerDependencies": {
-    "typescript": "^5.9.0-beta"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.11",
-    "@tanstack/react-router": "^1.129.2",
-    "@tanstack/react-start": "^1.129.2",
-    "@xyflow/react": "^12.8.2",
-    "ai": "^4.3.19",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.11",
-    "vite": "^7.0.5"
+    "@tailwindcss/vite": "^4.1.12",
+    "@tanstack/react-router": "^1.131.18",
+    "@tanstack/react-start": "^1.131.18",
+    "@xyflow/react": "^12.8.3",
+    "ai": "^5.0.15",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.12",
+    "vite": "^7.1.2"
   }
 }
