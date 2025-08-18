@@ -1,1 +1,36 @@
 @import "tailwindcss" important;
+
+@theme {
+  --color-bg: #16181a;
+  --color-bg-alt: #1e2124;
+  --color-bg-highlight: #3c4048;
+  --color-purple: #bd5eff;
+}
+
+/* [#16181a]                                           #16181a   bg */
+/**/
+/* [#1e2124]                                           #1e2124   bg_alt */
+/**/
+/* [#3c4048]                                           #3c4048   bg_highlight */
+/**/
+/* [#ffffff]                                           #ffffff   fg */
+/**/
+/* [#7b8496]                                           #7b8496   grey */
+/**/
+/* [#5ea1ff]                                           #5ea1ff   blue */
+/**/
+/* [#5eff6c]                                           #5eff6c   green */
+/**/
+/* [#5ef1ff]                                           #5ef1ff   cyan */
+/**/
+/* [#ff6e5e]                                           #ff6e5e   red */
+/**/
+/* [#f1ff5e]                                           #f1ff5e   yellow */
+/**/
+/* [#ff5ef1]                                           #ff5ef1   magenta */
+/**/
+/* [#ff5ea0]                                           #ff5ea0   pink */
+/**/
+/* [#ffbd5e]                                           #ffbd5e   orange */
+/**/
+/* [#bd5eff]                                           #bd5eff   purple */
