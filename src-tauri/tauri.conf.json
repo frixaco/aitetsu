@@ -10,14 +10,9 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "title": "aitetsu",
-        "width": 800,
-        "height": 600,
-        "decorations": false
-      }
-    ],
+    "withGlobalTauri": true,
+    "windows": [{ "decorations": false, "transparent": true }],
+    "macOSPrivateApi": true,
     "security": {
       "csp": null
     }

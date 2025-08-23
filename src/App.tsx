@@ -1,6 +1,7 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
+import { createPortal } from 'react-dom';
 
 const appWindow = getCurrentWindow();
 
@@ -43,24 +44,32 @@ function App() {
   ]);
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, z: 1 });
 
-  function openCardSheet(cardId: string) {}
+  const [openSheet, setOpenSheet] = useState(false);
 
   useKeyboardShortcut([
     {
       key: 'n',
       ctrlKey: true,
       callback: () => {
-        openCardSheet(crypto.randomUUID());
+        console.log('opening sheet');
+        setOpenSheet((p) => !p);
+      },
+    },
+    {
+      key: 'Escape',
+      callback: () => {
+        if (openSheet) {
+          setOpenSheet(false);
+        }
       },
     },
   ]);
 
   return (
-    <main className="flex h-screen flex-col bg-[#d7d8dd]">
+    <main className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden">
       <Titlebar />
-
       {/* viewport */}
-      <div className="relative flex-1 overflow-clip rounded-3xl">
+      <div className="relative flex-1 overflow-hidden rounded-3xl">
         {/* plane */}
         <div
           className="backface-hidden absolute top-0 left-0 will-change-transform"
@@ -76,8 +85,16 @@ function App() {
         </div>
       </div>
 
-      <div id="sheet">
-        <div>test</div>
+      <div
+        className="absolute inset-x-0 top-0 bottom-0 will-change-transform ease-out duration-500 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16"
+        style={{
+          transform: openSheet ? `translateY(0%)` : 'translateY(100%)',
+        }}
+      >
+        <div className="w-1/2 h-full">
+          <h1 className="font-bold text-3xl pb-4">Hello World</h1>
+          <p>Testing card sheet drawer or whatever this is</p>
+        </div>
       </div>
     </main>
   );
@@ -85,7 +102,7 @@ function App() {
 
 function Card({ card }: { card: Card }) {
   return (
-    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out">
+    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-101 hover:ease-in-out">
       <h1 className="font-bold text-lg">{card.title}</h1>
       <p className="">{card.content}</p>
     </div>
@@ -98,16 +115,16 @@ function Titlebar() {
       className="sticky top-0 right-0 left-0 flex h-8 items-center"
       data-tauri-drag-region
     >
-      <div className="group flex items-center gap-2 px-3 font-mono">
+      <div className="group flex items-center gap-2 px-4 font-mono">
         <button
-          className="relative flex size-4 cursor-pointer items-center justify-center rounded-full bg-red-500 drop-shadow-black/5 drop-shadow-xs"
+          className="relative flex size-3 cursor-pointer items-center justify-center rounded-full bg-red-500 drop-shadow-black/5 drop-shadow-xs"
           id="titlebar-close"
           onClick={() => appWindow.close()}
           title="close"
           type="button"
         >
           <svg
-            className="size-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-40"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
@@ -122,14 +139,14 @@ function Titlebar() {
           </svg>
         </button>
         <button
-          className="flex size-4 cursor-pointer items-center justify-center rounded-full bg-yellow-500 drop-shadow-black/5 drop-shadow-xs"
+          className="flex size-3 cursor-pointer items-center justify-center rounded-full bg-yellow-500 drop-shadow-black/5 drop-shadow-xs"
           id="titlebar-minimize"
           onClick={() => appWindow.minimize()}
           title="minimize"
           type="button"
         >
           <svg
-            className="size-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-50"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
@@ -144,14 +161,14 @@ function Titlebar() {
           </svg>
         </button>
         <button
-          className="group flex size-4 cursor-pointer items-center justify-center rounded-full bg-green-500 drop-shadow-black/5 drop-shadow-xs"
+          className="group flex size-3 cursor-pointer items-center justify-center rounded-full bg-green-500 drop-shadow-black/5 drop-shadow-xs"
           id="titlebar-maximize"
           onClick={() => appWindow.maximize()}
           title="maximize"
           type="button"
         >
           <svg
-            className="size-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="size-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-50"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
