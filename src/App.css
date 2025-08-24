@@ -98,10 +98,6 @@ body {
     margin: 2rem 0;
   }
 
-  p.is-editor-empty:first-child {
-    font-size: 1.4rem;
-    font-weight: bold;
-  }
   p.is-editor-empty:first-child::before {
     color: #adb5bd;
     content: attr(data-placeholder);

@@ -72,11 +72,12 @@ function App() {
   return (
     <main className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden">
       <Titlebar />
+
       {/* viewport */}
       <div className="relative flex-1 overflow-hidden rounded-3xl">
         {/* plane */}
         <div
-          className="backface-hidden absolute top-0 left-0 will-change-transform"
+          className="backface-hidden absolute top-0 left-0 will-change-transform transition-transform"
           style={{
             transform: `translate3d(${camera.x}px, ${camera.y}px, 0) scale(${camera.z})`,
             transformOrigin: '0 0',
@@ -90,13 +91,20 @@ function App() {
       </div>
 
       <div
-        className="absolute inset-x-0 top-0 bottom-0 will-change-transform ease-out duration-500 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16"
+        className="absolute inset-x-0 top-0 bottom-0 will-change-transform cubic duration-400 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16 transform-[clip-path,transform] ease-[cubic-bezier(0.25, 0.8, 0.25, 1)] shadow-2xl z-10"
         style={{
-          transform: openSheet ? `translateY(0%)` : 'translateY(100%)',
+          transform: openSheet
+            ? `translateY(0%) scale(1)`
+            : 'translateY(100%) scale(0.96)',
+          transformOrigin: 'bottom center',
         }}
       >
         <SheetContent />
       </div>
+
+      <div
+        className={` absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ease-out ${openSheet ? 'opacity-100' : 'opacity-0 pointer-events-none'} `}
+      />
     </main>
   );
 }
@@ -110,6 +118,7 @@ const Tiptap = () => {
       }),
     ], // define your extension array
     content: '', // initial content
+    autofocus: 'all',
   });
 
   // Memoize the provider value to avoid unnecessary re-renders
@@ -137,7 +146,7 @@ function SheetContent() {
 
 function Card({ card }: { card: Card }) {
   return (
-    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-101 hover:ease-in-out">
+    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out">
       <h1 className="font-bold text-lg">{card.title}</h1>
       <p className="">{card.content}</p>
     </div>
