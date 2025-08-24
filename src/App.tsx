@@ -146,9 +146,12 @@ function SheetContent() {
 
 function Card({ card }: { card: Card }) {
   return (
-    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out">
+    <div
+      className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out 
+      "
+    >
       <h1 className="font-bold text-lg">{card.title}</h1>
-      <p className="">{card.content}</p>
+      <p className="">{card.content}</p>;
     </div>
   );
 }
