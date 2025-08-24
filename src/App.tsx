@@ -8,10 +8,26 @@ import Heading from '@tiptap/extension-heading';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { create } from 'zustand';
 import './App.css';
 
 const appWindow = getCurrentWindow();
+
+const generateTestCards = (count: number): Card[] => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: crypto.randomUUID(),
+    title: `Card ${i + 1}`,
+    content: `This is test card number ${i + 1}`,
+    position: {
+      x: (i % 10) * 250, // Grid layout
+      y: Math.floor(i / 10) * 300,
+    },
+    size: { width: 200, height: 200 },
+  }));
+};
+
+const INITIAL_CARDS = generateTestCards(200); // Test virtualization with 200 cards
 
 type Card = {
   id: string;
@@ -21,14 +37,59 @@ type Card = {
   size: { width: number; height: number };
 };
 
-type Camera = {
-  x: number;
-  y: number;
-  z: number;
+interface CardsState {
+  cards: Card[];
+  addCard: (card: Card) => void;
+  updateCardMeta: (
+    id: string,
+    data: Partial<Omit<Card, 'position' | 'size'>>
+  ) => void;
+  moveCard: (id: string, position: { x: number; y: number }) => void;
+}
+
+const useCardsStore = create<CardsState>((set, get) => ({
+  cards: INITIAL_CARDS,
+  addCard: (card) => set((state) => ({ cards: [...state.cards, card] })),
+  updateCardMeta: (id, data) =>
+    set((state) => ({
+      cards: state.cards.map((c) => (c.id === id ? { ...c, ...data } : c)),
+    })),
+  moveCard: (id, position) => {
+    const c = get().cards.find((c) => c.id === id);
+    if (c) c.position = position;
+  },
+}));
+
+const FPSCounter = () => {
+  const [fps, setFPS] = useState(0);
+  const frameCount = useRef(0);
+  const lastTime = useRef(performance.now());
+
+  useEffect(() => {
+    const updateFPS = () => {
+      frameCount.current++;
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime.current;
+
+      if (deltaTime >= 1000) {
+        setFPS(Math.round((frameCount.current * 1000) / deltaTime));
+        frameCount.current = 0;
+        lastTime.current = currentTime;
+      }
+      requestAnimationFrame(updateFPS);
+    };
+    requestAnimationFrame(updateFPS);
+  }, []);
+
+  return (
+    <div className="fixed top-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm font-mono z-50">
+      FPS: {fps}
+    </div>
+  );
 };
 
 function App() {
-  // For dragged card
+  // For dragged cards
   function startDrag(el: HTMLElement) {
     el.style.willChange = 'transform';
     el.style.backfaceVisibility = 'hidden';
@@ -41,16 +102,12 @@ function App() {
     }, 300);
   }
 
-  const [cards, setCards] = useState<Card[]>([
-    {
-      id: crypto.randomUUID(),
-      title: 'New Card',
-      content: 'This is a new card',
-      position: { x: 0, y: 0 },
-      size: { width: 200, height: 200 },
-    },
-  ]);
-  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, z: 1 });
+  const cards = useCardsStore((state) => state.cards);
+
+  const cameraRef = useRef({ x: 0, y: 0, z: 1 });
+  const rafRef = useRef<number | null>(null);
+  const planeRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
 
   const [openSheet, setOpenSheet] = useState(false);
 
@@ -73,27 +130,76 @@ function App() {
     },
   ]);
 
+  const scheduleCameraRender = () => {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      if (!planeRef.current) return;
+      const { x, y, z } = cameraRef.current;
+      planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+      planeRef.current.style.transformOrigin = '0 0';
+
+      rafRef.current = null;
+    });
+  };
+
+  const cardElements = useMemo(
+    () =>
+      cards.map((card) => (
+        <Card card={card} cameraRef={cameraRef} key={card.id} />
+      )),
+    [cards]
+  );
+
   return (
     <main
       className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden transform-3d"
       style={{ overscrollBehavior: 'none' }}
     >
+      <FPSCounter />
       <Titlebar />
 
       {/* viewport */}
-      <div className="relative flex-1 overflow-hidden rounded-3xl">
+      <div
+        id="viewport"
+        ref={viewportRef}
+        className="relative flex-1 overflow-hidden rounded-3xl"
+        onWheel={(e) => {
+          if (!e.ctrlKey) return;
+          e.preventDefault();
+
+          const factor = e.deltaY < 0 ? 1.05 : 0.95;
+          cameraRef.current.z *= factor;
+          scheduleCameraRender();
+        }}
+        onPointerDown={(e) => {
+          if (e.button === 0 && e.target.closest('#viewport')) {
+            console.log('pointer down on plane');
+          }
+        }}
+        onPointerMove={(e) => {
+          if (e.buttons === 1) {
+            const dx = e.movementX;
+            const dy = e.movementY;
+
+            cameraRef.current.x += dx;
+            cameraRef.current.y += dy;
+            scheduleCameraRender();
+          }
+        }}
+        onPointerUp={(e) => {}}
+        onPointerCancel={(e) => {}}
+      >
         {/* plane */}
         <div
-          className="backface-hidden absolute top-0 left-0 will-change-transform transition-transform"
+          id="plane"
+          ref={planeRef}
+          className="backface-hidden absolute top-0 left-0 will-change-transform"
           style={{
-            transform: `translate3d(${camera.x}px, ${camera.y}px, 0) scale(${camera.z})`,
             transformOrigin: '0 0',
           }}
         >
-          {/* card */}
-          {cards.map((card) => (
-            <Card card={card} key={card.id} />
-          ))}
+          {/* cards */}
+          {cardElements}
         </div>
       </div>
 
@@ -174,14 +280,33 @@ function SheetContent({ shouldFocus }: { shouldFocus: boolean }) {
   );
 }
 
-function Card({ card }: { card: Card }) {
-  return (
-    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out">
-      <h1 className="font-bold text-lg">{card.title}</h1>
-      <p className="">{card.content}</p>
-    </div>
-  );
-}
+const Card = memo(
+  forwardRef<
+    HTMLDivElement,
+    {
+      card: Card;
+      cameraRef: React.MutableRefObject<{ x: number; y: number; z: number }>;
+    }
+  >(function Card({ card, cameraRef }, ref) {
+    const [isHovered, setIsHovered] = useState(false);
+    return (
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        ref={ref}
+        className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl will-change-transform"
+        style={{
+          transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0) scale(${isHovered ? 1.02 : 1})`,
+          transformOrigin: 'center center',
+          transition: 'transform 150ms ease-in-out',
+        }}
+      >
+        <h1 className="font-bold text-lg">{card.title}</h1>
+        <p className="">{card.content}</p>
+      </div>
+    );
+  })
+);
 
 function Titlebar() {
   return (
