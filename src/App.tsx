@@ -1,11 +1,15 @@
+import { twMerge } from 'tailwind-merge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEditor, EditorContent, EditorContext } from '@tiptap/react';
 import { Placeholder } from '@tiptap/extensions';
 import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus';
-import StarterKit from '@tiptap/starter-kit';
+import Document from '@tiptap/extension-document';
+import Heading from '@tiptap/extension-heading';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-import { createPortal } from 'react-dom';
 
 const appWindow = getCurrentWindow();
 
@@ -70,7 +74,10 @@ function App() {
   ]);
 
   return (
-    <main className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden">
+    <main
+      className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden transform-3d"
+      style={{ overscrollBehavior: 'none' }}
+    >
       <Titlebar />
 
       {/* viewport */}
@@ -91,37 +98,60 @@ function App() {
       </div>
 
       <div
-        className="absolute inset-x-0 top-0 bottom-0 will-change-transform cubic duration-400 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16 transform-[clip-path,transform] ease-[cubic-bezier(0.25, 0.8, 0.25, 1)] shadow-2xl z-10"
+        className={twMerge(
+          'absolute inset-x-0 top-0 bottom-0 will-change-transform duration-400 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16 ease-[cubic-bezier(0.25,0.8,0.25,1)] shadow-2xl z-10'
+          // openSheet
+          //   ? 'translate-y-0 scale-100'
+          //   : 'translate-y-full scale-[0.96]'
+        )}
         style={{
           transform: openSheet
-            ? `translateY(0%) scale(1)`
-            : 'translateY(100%) scale(0.96)',
-          transformOrigin: 'bottom center',
+            ? 'translate3d(0, 0, 0) scale(1)'
+            : 'translate3d(0, 100%, 0) scale(0.96)',
+          overscrollBehavior: 'none',
         }}
       >
-        <SheetContent />
+        <SheetContent shouldFocus={openSheet} />
       </div>
 
       <div
-        className={` absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ease-out ${openSheet ? 'opacity-100' : 'opacity-0 pointer-events-none'} `}
+        className={twMerge(
+          'absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ease-out',
+          openSheet ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
       />
     </main>
   );
 }
 
-const Tiptap = () => {
+const Tiptap = ({ shouldFocus }: { shouldFocus: boolean }) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      Document,
+      Paragraph,
+      Heading.configure({
+        levels: [1, 2, 3, 4, 5, 6],
+      }),
+      Text,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
       Placeholder.configure({
         placeholder: 'Write something …',
       }),
-    ], // define your extension array
-    content: '', // initial content
-    autofocus: 'all',
+    ],
+    content: '',
   });
 
-  // Memoize the provider value to avoid unnecessary re-renders
+  useEffect(() => {
+    if (shouldFocus && editor) {
+      editor.commands.focus('end', { scrollIntoView: false });
+    } else if (!shouldFocus && editor) {
+      editor.commands.blur();
+    }
+  }, [shouldFocus, editor]);
+
   const providerValue = useMemo(() => ({ editor }), [editor]);
 
   return (
@@ -132,12 +162,12 @@ const Tiptap = () => {
     </EditorContext.Provider>
   );
 };
-function SheetContent() {
+function SheetContent({ shouldFocus }: { shouldFocus: boolean }) {
   const [isDirty, setIsDirty] = useState(false);
 
   return (
-    <div className="w-1/2 h-full">
-      <Tiptap />
+    <div className="w-1/2 h-full contain-layout">
+      <Tiptap shouldFocus={shouldFocus} />
       {/* <h1 className="font-bold text-3xl pb-4">Hello World</h1> */}
       {/* <p>Testing card sheet drawer or whatever this is</p> */}
     </div>
@@ -146,12 +176,9 @@ function SheetContent() {
 
 function Card({ card }: { card: Card }) {
   return (
-    <div
-      className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out 
-      "
-    >
+    <div className="absolute top-4 left-4 h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl duration-150 will-change-transform hover:scale-102 hover:ease-in-out">
       <h1 className="font-bold text-lg">{card.title}</h1>
-      <p className="">{card.content}</p>;
+      <p className="">{card.content}</p>
     </div>
   );
 }

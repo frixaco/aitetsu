@@ -7,8 +7,12 @@
   - Everywhere else (e.g. messages, empty areas) are for dragging
 - Collabsible responses
 - Fix titlebar on macOS: https://v2.tauri.app/learn/window-customization/#macos-transparent-titlebar-with-custom-window-background-color
+- Have 2 modes for each card: AI chat and Note. Can switch modes for existing cards as well: AI chats -> become fully formatted markdown Note, Note -> populate input box for AI chat
 
-## Adding cards flow
+## Pan and zoom
 
-- Ctrl + n
-- A white rounded sheet appears from bottom and fills the screen
+- Add event handler for touchpad 2 finger panning
+- Left click drag on canvas
+- Space hold drag
+
+## Card creation, placement and alignment
