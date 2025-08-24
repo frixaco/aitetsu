@@ -1,5 +1,9 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useEffect, useRef, useState } from 'react';
+import { useEditor, EditorContent, EditorContext } from '@tiptap/react';
+import { Placeholder } from '@tiptap/extensions';
+import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus';
+import StarterKit from '@tiptap/starter-kit';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { createPortal } from 'react-dom';
 
@@ -91,12 +95,43 @@ function App() {
           transform: openSheet ? `translateY(0%)` : 'translateY(100%)',
         }}
       >
-        <div className="w-1/2 h-full">
-          <h1 className="font-bold text-3xl pb-4">Hello World</h1>
-          <p>Testing card sheet drawer or whatever this is</p>
-        </div>
+        <SheetContent />
       </div>
     </main>
+  );
+}
+
+const Tiptap = () => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: 'Write something …',
+      }),
+    ], // define your extension array
+    content: '', // initial content
+  });
+
+  // Memoize the provider value to avoid unnecessary re-renders
+  const providerValue = useMemo(() => ({ editor }), [editor]);
+
+  return (
+    <EditorContext.Provider value={providerValue}>
+      <EditorContent editor={editor} />
+      {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
+      {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}
+    </EditorContext.Provider>
+  );
+};
+function SheetContent() {
+  const [isDirty, setIsDirty] = useState(false);
+
+  return (
+    <div className="w-1/2 h-full">
+      <Tiptap />
+      {/* <h1 className="font-bold text-3xl pb-4">Hello World</h1> */}
+      {/* <p>Testing card sheet drawer or whatever this is</p> */}
+    </div>
   );
 }
 
@@ -112,19 +147,19 @@ function Card({ card }: { card: Card }) {
 function Titlebar() {
   return (
     <div
-      className="sticky top-0 right-0 left-0 flex h-8 items-center"
+      className="sticky top-0 right-0 left-0 flex h-10 items-center"
       data-tauri-drag-region
     >
       <div className="group flex items-center gap-2 px-4 font-mono">
         <button
-          className="relative flex size-3 cursor-pointer items-center justify-center rounded-full bg-red-500 drop-shadow-black/5 drop-shadow-xs"
+          className="relative flex size-3 cursor-pointer items-center justify-center rounded-full bg-red-500 drop-shadow-black/5 drop-shadow-xs outline-none"
           id="titlebar-close"
           onClick={() => appWindow.close()}
           title="close"
           type="button"
         >
           <svg
-            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-40"
+            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-60"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
@@ -139,14 +174,14 @@ function Titlebar() {
           </svg>
         </button>
         <button
-          className="flex size-3 cursor-pointer items-center justify-center rounded-full bg-yellow-500 drop-shadow-black/5 drop-shadow-xs"
+          className="flex size-3 cursor-pointer items-center justify-center rounded-full bg-yellow-500 drop-shadow-black/5 drop-shadow-xs outline-none"
           id="titlebar-minimize"
           onClick={() => appWindow.minimize()}
           title="minimize"
           type="button"
         >
           <svg
-            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-50"
+            className="size-2 opacity-0 transition-opacity duration-300 group-hover:opacity-60"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
@@ -161,14 +196,14 @@ function Titlebar() {
           </svg>
         </button>
         <button
-          className="group flex size-3 cursor-pointer items-center justify-center rounded-full bg-green-500 drop-shadow-black/5 drop-shadow-xs"
+          className="group flex size-3 cursor-pointer items-center justify-center rounded-full bg-green-500 drop-shadow-black/5 drop-shadow-xs outline-none"
           id="titlebar-maximize"
           onClick={() => appWindow.maximize()}
           title="maximize"
           type="button"
         >
           <svg
-            className="size-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-50"
+            className="size-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-60"
             fill="none"
             viewBox="0 0 12 12"
             xmlns="http://www.w3.org/2000/svg"
