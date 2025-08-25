@@ -11,8 +11,13 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [{ "decorations": false, "transparent": true }],
-    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "decorations": false,
+        "transparent": true
+      }
+    ],
+    "macOSPrivateApi": false,
     "security": {
       "csp": null
     }
