@@ -216,7 +216,7 @@ function App() {
 
   return (
     <main
-      className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden transform-3d"
+      className="relative flex h-screen transform-3d flex-col overflow-hidden bg-[#d7d8dd]"
       style={{ overscrollBehavior: 'none' }}
     >
       <FPSCounter />
@@ -226,7 +226,7 @@ function App() {
       <div
         id="viewport"
         ref={viewportRef}
-        className="relative flex-1 overflow-hidden rounded-3xl"
+        className="relative flex-1 overflow-hidden"
         // APPROACH 3 - TODO: still lagggy on first few scrolls
         onWheel={(e) => {
           if (e.ctrlKey && viewportRef.current) {
@@ -317,9 +317,10 @@ function App() {
         </div>
       </div>
 
+      {/* Bottom sheet drawer */}
       <div
         className={
-          'absolute inset-x-0 top-0 bottom-0 will-change-transform duration-400 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16 ease-[cubic-bezier(0.25,0.8,0.25,1)] shadow-2xl z-10'
+          'absolute inset-x-0 top-0 bottom-0 z-10 flex will-change-transform flex-col items-center overflow-hidden bg-gray-100 pt-16 shadow-2xl duration-400 ease-[cubic-bezier(0.25,0.8,0.25,1)]'
         }
         style={{
           transform: openSheet
@@ -331,11 +332,13 @@ function App() {
         <SheetContent shouldFocus={openSheet} />
       </div>
 
+      {/* Backdrop */}
       <div
         className={twMerge(
-          'absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ease-out',
+          'absolute inset-0 transition-opacity duration-500 ease-out bg-black/40',
           openSheet ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
+        style={{ backdropFilter: openSheet ? 'blur(6px)' : 'none' }}
       />
     </main>
   );
@@ -405,9 +408,8 @@ const Card = memo(
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         ref={ref}
-        // className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 backface-hidden"
         // TODO: disable shadow when +100 cards are visible
-        className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl backface-hidden"
+        className="absolute select-none h-72 w-48 bg-[#edeef3] p-4 drop-shadow-xl backface-hidden"
         style={{
           transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0)`,
           transformOrigin: 'center center',
