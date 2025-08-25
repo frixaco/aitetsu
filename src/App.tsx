@@ -8,7 +8,15 @@ import Heading from '@tiptap/extension-heading';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
-import { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { create } from 'zustand';
 import './App.css';
 
@@ -20,14 +28,14 @@ const generateTestCards = (count: number): Card[] => {
     title: `Card ${i + 1}`,
     content: `This is test card number ${i + 1}`,
     position: {
-      x: (i % 10) * 250, // Grid layout
+      x: (i % 10) * 250,
       y: Math.floor(i / 10) * 300,
     },
     size: { width: 200, height: 200 },
   }));
 };
 
-const INITIAL_CARDS = generateTestCards(200); // Test virtualization with 200 cards
+const INITIAL_CARDS = generateTestCards(200);
 
 type Card = {
   id: string;
@@ -44,7 +52,6 @@ interface CardsState {
     id: string,
     data: Partial<Omit<Card, 'position' | 'size'>>
   ) => void;
-  moveCard: (id: string, position: { x: number; y: number }) => void;
 }
 
 const useCardsStore = create<CardsState>((set, get) => ({
@@ -54,10 +61,6 @@ const useCardsStore = create<CardsState>((set, get) => ({
     set((state) => ({
       cards: state.cards.map((c) => (c.id === id ? { ...c, ...data } : c)),
     })),
-  moveCard: (id, position) => {
-    const c = get().cards.find((c) => c.id === id);
-    if (c) c.position = position;
-  },
 }));
 
 const FPSCounter = () => {
@@ -150,6 +153,67 @@ function App() {
     [cards]
   );
 
+  // APPROACH 1
+  // const handleWheel = useCallback((e: WheelEvent) => {
+  //   if (e.ctrlKey) {
+  //     e.preventDefault();
+  //
+  //     console.log('zoom', {
+  //       dy: e.deltaY,
+  //     });
+  //   } else {
+  //     cameraRef.current.x += -e.deltaX;
+  //     cameraRef.current.y += -e.deltaY;
+  //
+  //     scheduleCameraRender();
+  //   }
+  // }, []);
+  //
+  // const viewportRefCallback = useCallback(
+  //   (node) => {
+  //     console.log(node);
+  //     if (node == null) {
+  //       return;
+  //     }
+  //     viewportRef.current = node;
+  //     node.addEventListener('wheel', handleWheel, { passive: false });
+  //   },
+  //   [handleWheel]
+  // );
+
+  // APPROACH 2
+  // useEffect(() => {
+  //   const handleWheel = (e: WheelEvent) => {
+  //     if (e.ctrlKey) {
+  //       e.preventDefault();
+  //
+  //       console.log('zoom', {
+  //         dy: e.deltaY,
+  //       });
+  //     } else {
+  //       cameraRef.current.x += -e.deltaX;
+  //       cameraRef.current.y += -e.deltaY;
+  //
+  //       scheduleCameraRender();
+  //     }
+  //   };
+  //
+  //   const viewportElement = viewportRef.current;
+  //   if (viewportElement) {
+  //     viewportElement.addEventListener('wheel', handleWheel, {
+  //       passive: true,
+  //     });
+  //   }
+  //
+  //   return () => {
+  //     if (viewportElement) {
+  //       viewportElement.removeEventListener('wheel', handleWheel, {
+  //         passive: true,
+  //       });
+  //     }
+  //   };
+  // }, []);
+
   return (
     <main
       className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden transform-3d"
@@ -163,13 +227,19 @@ function App() {
         id="viewport"
         ref={viewportRef}
         className="relative flex-1 overflow-hidden rounded-3xl"
+        // APPROACH 3 - TODO: still lagggy on first few scrolls
         onWheel={(e) => {
-          if (!e.ctrlKey) return;
-          e.preventDefault();
-
-          const factor = e.deltaY < 0 ? 1.05 : 0.95;
-          cameraRef.current.z *= factor;
-          scheduleCameraRender();
+          if (e.ctrlKey) {
+            e.preventDefault();
+            console.log('zoom', {
+              dy: e.deltaY,
+            });
+          } else {
+            e.preventDefault();
+            cameraRef.current.x += -e.deltaX;
+            cameraRef.current.y += -e.deltaY;
+            scheduleCameraRender();
+          }
         }}
         onPointerDown={(e) => {
           if (e.button === 0 && e.target.closest('#viewport')) {
@@ -178,11 +248,8 @@ function App() {
         }}
         onPointerMove={(e) => {
           if (e.buttons === 1) {
-            const dx = e.movementX;
-            const dy = e.movementY;
-
-            cameraRef.current.x += dx;
-            cameraRef.current.y += dy;
+            cameraRef.current.x += e.movementX;
+            cameraRef.current.y += e.movementY;
             scheduleCameraRender();
           }
         }}
@@ -193,10 +260,10 @@ function App() {
         <div
           id="plane"
           ref={planeRef}
-          className="backface-hidden absolute top-0 left-0 will-change-transform"
-          style={{
-            transformOrigin: '0 0',
-          }}
+          className="backface-hidden absolute top-0 left-0 will-change-transform duration-150 transition-transform ease-out origin-[0_0]"
+          // style={{
+          //  transformOrigin: '0 0',
+          // }}
         >
           {/* cards */}
           {cardElements}
