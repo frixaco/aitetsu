@@ -2,21 +2,12 @@ import { twMerge } from 'tailwind-merge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEditor, EditorContent, EditorContext } from '@tiptap/react';
 import { Placeholder } from '@tiptap/extensions';
-import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus';
 import Document from '@tiptap/extension-document';
 import Heading from '@tiptap/extension-heading';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
-import {
-  forwardRef,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 import './App.css';
 
@@ -92,19 +83,6 @@ const FPSCounter = () => {
 };
 
 function App() {
-  // For dragged cards
-  function startDrag(el: HTMLElement) {
-    el.style.willChange = 'transform';
-    el.style.backfaceVisibility = 'hidden';
-  }
-
-  function endDrag(el: HTMLElement) {
-    setTimeout(() => {
-      el.style.willChange = 'auto';
-      el.style.backfaceVisibility = '';
-    }, 300);
-  }
-
   const cards = useCardsStore((state) => state.cards);
 
   const cameraRef = useRef({ x: 0, y: 0, z: 1 });
@@ -214,6 +192,28 @@ function App() {
   //   };
   // }, []);
 
+  const isInteractingRef = useRef(false);
+  useEffect(() => {
+    const planeElement = planeRef.current;
+
+    const handleTransitionEnd = () => {
+      // This function is called automatically when the CSS transition finishes.
+      if (planeElement && !isInteractingRef.current) {
+        planeElement.style.transition = ''; // Remove all transition properties at once
+      }
+    };
+
+    if (planeElement) {
+      planeElement.addEventListener('transitionend', handleTransitionEnd);
+    }
+
+    return () => {
+      if (planeElement) {
+        planeElement.removeEventListener('transitionend', handleTransitionEnd);
+      }
+    };
+  }, []);
+
   return (
     <main
       className="relative flex h-screen flex-col bg-[#d7d8dd] rounded-3xl overflow-hidden transform-3d"
@@ -229,11 +229,35 @@ function App() {
         className="relative flex-1 overflow-hidden rounded-3xl"
         // APPROACH 3 - TODO: still lagggy on first few scrolls
         onWheel={(e) => {
-          if (e.ctrlKey) {
+          if (e.ctrlKey && viewportRef.current) {
             e.preventDefault();
-            console.log('zoom', {
-              dy: e.deltaY,
-            });
+
+            const r = viewportRef.current.getBoundingClientRect();
+            const cursorViewportX = e.clientX - r.left;
+            const cursorViewportY = e.clientY - r.top;
+
+            const cursorPlaneX =
+              (cursorViewportX - cameraRef.current.x) / cameraRef.current.z;
+            const cursorPlaneY =
+              (cursorViewportY - cameraRef.current.y) / cameraRef.current.z;
+
+            const MIN_ZOOM = 0.25;
+            const MAX_ZOOM = 3;
+            const ZOOM_SPEED = 0.015;
+            const newZoom = Math.min(
+              cameraRef.current.z *
+                Math.max(Math.exp(-e.deltaY * ZOOM_SPEED), MIN_ZOOM),
+              MAX_ZOOM
+            );
+
+            const newCursorPlaneX = cursorViewportX - newZoom * cursorPlaneX;
+            const newCursorPlaneY = cursorViewportY - newZoom * cursorPlaneY;
+
+            cameraRef.current.x = newCursorPlaneX;
+            cameraRef.current.y = newCursorPlaneY;
+            cameraRef.current.z = newZoom;
+
+            scheduleCameraRender();
           } else {
             e.preventDefault();
             cameraRef.current.x += -e.deltaX;
@@ -244,6 +268,12 @@ function App() {
         onPointerDown={(e) => {
           if (e.button === 0 && e.target.closest('#viewport')) {
             console.log('pointer down on plane');
+
+            isInteractingRef.current = true;
+            // IMPORTANT: Immediately disable transitions when interaction starts.
+            if (planeRef.current) {
+              planeRef.current.style.transition = '';
+            }
           }
         }}
         onPointerMove={(e) => {
@@ -253,17 +283,34 @@ function App() {
             scheduleCameraRender();
           }
         }}
-        onPointerUp={(e) => {}}
+        onPointerUp={(e) => {
+          isInteractingRef.current = false;
+          // On interaction end, apply the transition for a smooth stop.
+          if (planeRef.current) {
+            planeRef.current.style.transition = 'transform 150ms ease-out';
+          }
+        }}
+        onPointerLeave={(e) => {
+          if (isInteractingRef.current) {
+            isInteractingRef.current = false;
+            if (planeRef.current) {
+              planeRef.current.style.transition = 'transform 150ms ease-out';
+            }
+          }
+        }}
         onPointerCancel={(e) => {}}
       >
         {/* plane */}
         <div
           id="plane"
           ref={planeRef}
-          className="backface-hidden absolute top-0 left-0 will-change-transform duration-150 transition-transform ease-out origin-[0_0]"
-          // style={{
-          //  transformOrigin: '0 0',
-          // }}
+          className="backface-hidden absolute top-0 left-0 will-change-transform"
+          style={{
+            // transitionDuration: '150ms',
+            // transitionProperty: 'transform',
+            // transitionTimingFunction: 'ease-out',
+            transformOrigin: '0 0',
+          }}
         >
           {/* cards */}
           {cardElements}
@@ -271,12 +318,9 @@ function App() {
       </div>
 
       <div
-        className={twMerge(
+        className={
           'absolute inset-x-0 top-0 bottom-0 will-change-transform duration-400 bg-gray-100 rounded-3xl overflow-hidden flex flex-col items-center pt-16 ease-[cubic-bezier(0.25,0.8,0.25,1)] shadow-2xl z-10'
-          // openSheet
-          //   ? 'translate-y-0 scale-100'
-          //   : 'translate-y-full scale-[0.96]'
-        )}
+        }
         style={{
           transform: openSheet
             ? 'translate3d(0, 0, 0) scale(1)'
@@ -361,11 +405,14 @@ const Card = memo(
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         ref={ref}
-        className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl will-change-transform"
+        // className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 backface-hidden"
+        // TODO: disable shadow when +100 cards are visible
+        className="absolute select-none h-72 w-48 rounded-3xl bg-[#edeef3] p-4 drop-shadow-xl backface-hidden"
         style={{
-          transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0) scale(${isHovered ? 1.02 : 1})`,
+          transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0)`,
           transformOrigin: 'center center',
           transition: 'transform 150ms ease-in-out',
+          willChange: 'transform',
         }}
       >
         <h1 className="font-bold text-lg">{card.title}</h1>

@@ -2,6 +2,7 @@
 
 ## TODO
 
+- Add virtualization and direct card dragging to improve performance
 - For seamless edit/view mode for cards I have following idea:
   - When input box, buttons are hovered, they work immediately and you can't dragging while pressing those
   - Everywhere else (e.g. messages, empty areas) are for dragging
