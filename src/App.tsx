@@ -38,24 +38,28 @@ type Card = {
 };
 
 interface CardsState {
+  activeTab: 'v1' | 'v2';
   cards: Card[];
   addCard: (card: Card) => void;
   updateCardMeta: (
     id: string,
     data: Partial<Omit<Card, 'position' | 'size'>>
   ) => void;
+  setActiveTab: (tabId: 'v1' | 'v2') => void;
 }
 
-const useCardsStore = create<CardsState>((set, get) => ({
+const useMainStore = create<CardsState>((set, get) => ({
+  activeTab: 'v1',
   cards: INITIAL_CARDS,
   addCard: (card) => set((state) => ({ cards: [...state.cards, card] })),
   updateCardMeta: (id, data) =>
     set((state) => ({
       cards: state.cards.map((c) => (c.id === id ? { ...c, ...data } : c)),
     })),
+  setActiveTab: (tabId) => set(() => ({ activeTab: tabId })),
 }));
 
-const FPSCounter = () => {
+const Debug = () => {
   const [fps, setFPS] = useState(0);
   const frameCount = useRef(0);
   const lastTime = useRef(performance.now());
@@ -77,8 +81,23 @@ const FPSCounter = () => {
   }, []);
 
   return (
-    <div className="fixed top-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm font-mono z-50">
-      FPS: {fps}
+    <div className="fixed top-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm font-mono z-50 flex flex-col items-center">
+      <span>FPS: {fps}</span>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => useMainStore.getState().setActiveTab('v1')}
+          className="bg-gray-700 px-2 rounded-sm"
+        >
+          v1
+        </button>
+        <button
+          onClick={() => useMainStore.getState().setActiveTab('v2')}
+          className="bg-gray-700 px-2 rounded-sm"
+        >
+          v2
+        </button>
+      </div>
     </div>
   );
 };
@@ -87,12 +106,7 @@ const platformName = platform();
 const isWindows = platformName === 'windows';
 
 function App() {
-  const cards = useCardsStore((state) => state.cards);
-
-  const cameraRef = useRef({ x: 0, y: 0, z: 1 });
-  const rafRef = useRef<number | null>(null);
-  const planeRef = useRef<HTMLDivElement | null>(null);
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const activeTab = useMainStore((state) => state.activeTab);
 
   const [openSheet, setOpenSheet] = useState(false);
 
@@ -115,211 +129,17 @@ function App() {
     },
   ]);
 
-  const scheduleCameraRender = () => {
-    if (rafRef.current) return;
-    rafRef.current = requestAnimationFrame(() => {
-      if (!planeRef.current) return;
-      const { x, y, z } = cameraRef.current;
-      planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
-      planeRef.current.style.transformOrigin = '0 0';
-
-      rafRef.current = null;
-    });
-  };
-
-  const cardElements = useMemo(
-    () =>
-      cards.map((card) => (
-        <Card card={card} cameraRef={cameraRef} key={card.id} />
-      )),
-    [cards]
-  );
-
-  // APPROACH 1
-  // const handleWheel = useCallback((e: WheelEvent) => {
-  //   if (e.ctrlKey) {
-  //     e.preventDefault();
-  //
-  //     console.log('zoom', {
-  //       dy: e.deltaY,
-  //     });
-  //   } else {
-  //     cameraRef.current.x += -e.deltaX;
-  //     cameraRef.current.y += -e.deltaY;
-  //
-  //     scheduleCameraRender();
-  //   }
-  // }, []);
-  //
-  // const viewportRefCallback = useCallback(
-  //   (node) => {
-  //     console.log(node);
-  //     if (node == null) {
-  //       return;
-  //     }
-  //     viewportRef.current = node;
-  //     node.addEventListener('wheel', handleWheel, { passive: false });
-  //   },
-  //   [handleWheel]
-  // );
-
-  // APPROACH 2
-  // useEffect(() => {
-  //   const handleWheel = (e: WheelEvent) => {
-  //     if (e.ctrlKey) {
-  //       e.preventDefault();
-  //
-  //       console.log('zoom', {
-  //         dy: e.deltaY,
-  //       });
-  //     } else {
-  //       cameraRef.current.x += -e.deltaX;
-  //       cameraRef.current.y += -e.deltaY;
-  //
-  //       scheduleCameraRender();
-  //     }
-  //   };
-  //
-  //   const viewportElement = viewportRef.current;
-  //   if (viewportElement) {
-  //     viewportElement.addEventListener('wheel', handleWheel, {
-  //       passive: true,
-  //     });
-  //   }
-  //
-  //   return () => {
-  //     if (viewportElement) {
-  //       viewportElement.removeEventListener('wheel', handleWheel, {
-  //         passive: true,
-  //       });
-  //     }
-  //   };
-  // }, []);
-
-  const isInteractingRef = useRef(false);
-  useEffect(() => {
-    const planeElement = planeRef.current;
-
-    const handleTransitionEnd = () => {
-      // This function is called automatically when the CSS transition finishes.
-      if (planeElement && !isInteractingRef.current) {
-        planeElement.style.transition = ''; // Remove all transition properties at once
-      }
-    };
-
-    if (planeElement) {
-      planeElement.addEventListener('transitionend', handleTransitionEnd);
-    }
-
-    return () => {
-      if (planeElement) {
-        planeElement.removeEventListener('transitionend', handleTransitionEnd);
-      }
-    };
-  }, []);
-
   return (
     <main
       className="relative flex h-screen transform-3d flex-col overflow-hidden bg-[#d7d8dd]"
       style={{ overscrollBehavior: 'none' }}
     >
-      <FPSCounter />
+      <Debug />
       {isWindows && <Titlebar />}
 
       {/* viewport */}
-      <div
-        id="viewport"
-        ref={viewportRef}
-        className="relative flex-1 overflow-hidden"
-        // APPROACH 3 - TODO: still lagggy on first few scrolls
-        onWheel={(e) => {
-          if (e.ctrlKey && viewportRef.current) {
-            e.preventDefault();
-
-            const r = viewportRef.current.getBoundingClientRect();
-            const cursorViewportX = e.clientX - r.left;
-            const cursorViewportY = e.clientY - r.top;
-
-            const cursorPlaneX =
-              (cursorViewportX - cameraRef.current.x) / cameraRef.current.z;
-            const cursorPlaneY =
-              (cursorViewportY - cameraRef.current.y) / cameraRef.current.z;
-
-            const MIN_ZOOM = 0.25;
-            const MAX_ZOOM = 3;
-            const ZOOM_SPEED = 0.015;
-            const newZoom = Math.min(
-              cameraRef.current.z *
-                Math.max(Math.exp(-e.deltaY * ZOOM_SPEED), MIN_ZOOM),
-              MAX_ZOOM
-            );
-
-            const newCursorPlaneX = cursorViewportX - newZoom * cursorPlaneX;
-            const newCursorPlaneY = cursorViewportY - newZoom * cursorPlaneY;
-
-            cameraRef.current.x = newCursorPlaneX;
-            cameraRef.current.y = newCursorPlaneY;
-            cameraRef.current.z = newZoom;
-
-            scheduleCameraRender();
-          } else {
-            e.preventDefault();
-            cameraRef.current.x += -e.deltaX;
-            cameraRef.current.y += -e.deltaY;
-            scheduleCameraRender();
-          }
-        }}
-        onPointerDown={(e) => {
-          if (e.button === 0 && e.target.closest('#viewport')) {
-            console.log('pointer down on plane');
-
-            isInteractingRef.current = true;
-            // IMPORTANT: Immediately disable transitions when interaction starts.
-            if (planeRef.current) {
-              planeRef.current.style.transition = '';
-            }
-          }
-        }}
-        onPointerMove={(e) => {
-          if (e.buttons === 1) {
-            cameraRef.current.x += e.movementX;
-            cameraRef.current.y += e.movementY;
-            scheduleCameraRender();
-          }
-        }}
-        onPointerUp={(e) => {
-          isInteractingRef.current = false;
-          // On interaction end, apply the transition for a smooth stop.
-          if (planeRef.current) {
-            planeRef.current.style.transition = 'transform 150ms ease-out';
-          }
-        }}
-        onPointerLeave={(e) => {
-          if (isInteractingRef.current) {
-            isInteractingRef.current = false;
-            if (planeRef.current) {
-              planeRef.current.style.transition = 'transform 150ms ease-out';
-            }
-          }
-        }}
-        onPointerCancel={(e) => {}}
-      >
-        {/* plane */}
-        <div
-          id="plane"
-          ref={planeRef}
-          className="backface-hidden absolute top-0 left-0 will-change-transform"
-          style={{
-            // transitionDuration: '150ms',
-            // transitionProperty: 'transform',
-            // transitionTimingFunction: 'ease-out',
-            transformOrigin: '0 0',
-          }}
-        >
-          {/* cards */}
-          {cardElements}
-        </div>
-      </div>
+      {activeTab === 'v1' && <V1Viewport />}
+      {activeTab === 'v2' && <V2Viewport />}
 
       {/* Bottom sheet drawer */}
       <div
@@ -345,6 +165,156 @@ function App() {
         style={{ backdropFilter: openSheet ? 'blur(6px)' : 'none' }}
       />
     </main>
+  );
+}
+
+function V2Viewport() {
+  return <div></div>;
+}
+
+function V1Viewport() {
+  const cards = useMainStore((state) => state.cards);
+  const cameraRef = useRef({ x: 0, y: 0, z: 1 });
+  const rafRef = useRef<number | null>(null);
+  const planeRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  const scheduleCameraRender = () => {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      if (!planeRef.current) return;
+      const { x, y, z } = cameraRef.current;
+      planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+      planeRef.current.style.transformOrigin = '0 0';
+
+      rafRef.current = null;
+    });
+  };
+
+  const cardElements = useMemo(
+    () =>
+      cards.map((card) => (
+        <Card card={card} cameraRef={cameraRef} key={card.id} />
+      )),
+    [cards]
+  );
+
+  const isInteractingRef = useRef(false);
+  useEffect(() => {
+    const planeElement = planeRef.current;
+
+    const handleTransitionEnd = () => {
+      // This function is called automatically when the CSS transition finishes.
+      if (planeElement && !isInteractingRef.current) {
+        planeElement.style.transition = ''; // Remove all transition properties at once
+      }
+    };
+
+    if (planeElement) {
+      planeElement.addEventListener('transitionend', handleTransitionEnd);
+    }
+
+    return () => {
+      if (planeElement) {
+        planeElement.removeEventListener('transitionend', handleTransitionEnd);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      id="viewport"
+      ref={viewportRef}
+      className="relative flex-1 overflow-hidden"
+      // APPROACH 3 - TODO: still lagggy on first few scrolls
+      onWheel={(e) => {
+        if (e.ctrlKey && viewportRef.current) {
+          e.preventDefault();
+
+          const r = viewportRef.current.getBoundingClientRect();
+          const cursorViewportX = e.clientX - r.left;
+          const cursorViewportY = e.clientY - r.top;
+
+          const cursorPlaneX =
+            (cursorViewportX - cameraRef.current.x) / cameraRef.current.z;
+          const cursorPlaneY =
+            (cursorViewportY - cameraRef.current.y) / cameraRef.current.z;
+
+          const MIN_ZOOM = 0.25;
+          const MAX_ZOOM = 3;
+          const ZOOM_SPEED = isWindows ? 0.001 : 0.015;
+          const newZoom = Math.min(
+            cameraRef.current.z *
+              Math.max(Math.exp(-e.deltaY * ZOOM_SPEED), MIN_ZOOM),
+            MAX_ZOOM
+          );
+
+          const newCursorPlaneX = cursorViewportX - newZoom * cursorPlaneX;
+          const newCursorPlaneY = cursorViewportY - newZoom * cursorPlaneY;
+
+          cameraRef.current.x = newCursorPlaneX;
+          cameraRef.current.y = newCursorPlaneY;
+          cameraRef.current.z = newZoom;
+
+          scheduleCameraRender();
+        } else {
+          e.preventDefault();
+          cameraRef.current.x += -e.deltaX;
+          cameraRef.current.y += -e.deltaY;
+          scheduleCameraRender();
+        }
+      }}
+      onPointerDown={(e) => {
+        if (e.button === 0 && e.target.closest('#viewport')) {
+          console.log('pointer down on plane');
+
+          isInteractingRef.current = true;
+          // IMPORTANT: Immediately disable transitions when interaction starts.
+          if (planeRef.current) {
+            planeRef.current.style.transition = '';
+          }
+        }
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons === 1) {
+          cameraRef.current.x += e.movementX;
+          cameraRef.current.y += e.movementY;
+          scheduleCameraRender();
+        }
+      }}
+      onPointerUp={(e) => {
+        isInteractingRef.current = false;
+        // On interaction end, apply the transition for a smooth stop.
+        if (planeRef.current) {
+          planeRef.current.style.transition = 'transform 150ms ease-out';
+        }
+      }}
+      onPointerLeave={(e) => {
+        if (isInteractingRef.current) {
+          isInteractingRef.current = false;
+          if (planeRef.current) {
+            planeRef.current.style.transition = 'transform 150ms ease-out';
+          }
+        }
+      }}
+      onPointerCancel={(e) => {}}
+    >
+      {/* plane */}
+      <div
+        id="plane"
+        ref={planeRef}
+        className="backface-hidden absolute top-0 left-0 will-change-transform"
+        style={{
+          // transitionDuration: '150ms',
+          // transitionProperty: 'transform',
+          // transitionTimingFunction: 'ease-out',
+          transformOrigin: '0 0',
+        }}
+      >
+        {/* cards */}
+        {cardElements}
+      </div>
+    </div>
   );
 }
 
@@ -386,6 +356,7 @@ const Tiptap = ({ shouldFocus }: { shouldFocus: boolean }) => {
     </EditorContext.Provider>
   );
 };
+
 function SheetContent({ shouldFocus }: { shouldFocus: boolean }) {
   const [isDirty, setIsDirty] = useState(false);
 
@@ -413,7 +384,7 @@ const Card = memo(
         onMouseLeave={() => setIsHovered(false)}
         ref={ref}
         // TODO: disable shadow when +100 cards are visible
-        className="absolute select-none h-72 w-48 bg-[#edeef3] p-4 drop-shadow-xl backface-hidden"
+        className="absolute select-none h-72 w-48 bg-[#edeef3] rounded-3xl p-4 drop-shadow-xl backface-hidden"
         style={{
           transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0)`,
           transformOrigin: 'center center',
@@ -570,3 +541,64 @@ function useKeyboardShortcut(shortcuts: KeyCombo[]) {
 }
 
 export default App;
+
+// APPROACH 1
+// const handleWheel = useCallback((e: WheelEvent) => {
+//   if (e.ctrlKey) {
+//     e.preventDefault();
+//
+//     console.log('zoom', {
+//       dy: e.deltaY,
+//     });
+//   } else {
+//     cameraRef.current.x += -e.deltaX;
+//     cameraRef.current.y += -e.deltaY;
+//
+//     scheduleCameraRender();
+//   }
+// }, []);
+//
+// const viewportRefCallback = useCallback(
+//   (node) => {
+//     console.log(node);
+//     if (node == null) {
+//       return;
+//     }
+//     viewportRef.current = node;
+//     node.addEventListener('wheel', handleWheel, { passive: false });
+//   },
+//   [handleWheel]
+// );
+
+// APPROACH 2
+// useEffect(() => {
+//   const handleWheel = (e: WheelEvent) => {
+//     if (e.ctrlKey) {
+//       e.preventDefault();
+//
+//       console.log('zoom', {
+//         dy: e.deltaY,
+//       });
+//     } else {
+//       cameraRef.current.x += -e.deltaX;
+//       cameraRef.current.y += -e.deltaY;
+//
+//       scheduleCameraRender();
+//     }
+//   };
+//
+//   const viewportElement = viewportRef.current;
+//   if (viewportElement) {
+//     viewportElement.addEventListener('wheel', handleWheel, {
+//       passive: true,
+//     });
+//   }
+//
+//   return () => {
+//     if (viewportElement) {
+//       viewportElement.removeEventListener('wheel', handleWheel, {
+//         passive: true,
+//       });
+//     }
+//   };
+// }, []);
