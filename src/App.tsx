@@ -1,5 +1,6 @@
 import { twMerge } from 'tailwind-merge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { platform } from '@tauri-apps/plugin-os';
 import { useEditor, EditorContent, EditorContext } from '@tiptap/react';
 import { Placeholder } from '@tiptap/extensions';
 import Document from '@tiptap/extension-document';
@@ -81,6 +82,9 @@ const FPSCounter = () => {
     </div>
   );
 };
+
+const platformName = platform();
+const isWindows = platformName === 'windows';
 
 function App() {
   const cards = useCardsStore((state) => state.cards);
@@ -220,7 +224,7 @@ function App() {
       style={{ overscrollBehavior: 'none' }}
     >
       <FPSCounter />
-      {/* <Titlebar /> */}
+      {isWindows && <Titlebar />}
 
       {/* viewport */}
       <div
@@ -428,6 +432,7 @@ function Titlebar() {
   return (
     <div
       className="sticky top-0 right-0 left-0 flex h-10 items-center"
+      style={{ backgroundColor: 'rgb(215, 216, 221)' }}
       data-tauri-drag-region
     >
       <div className="group flex items-center gap-2 px-4 font-mono">

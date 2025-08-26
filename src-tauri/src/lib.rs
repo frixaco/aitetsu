@@ -3,6 +3,7 @@ use tauri::{Theme, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .setup(|app| {
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .title("aitetsu")
@@ -12,6 +13,10 @@ pub fn run() {
             // set transparent title bar only when building for macOS
             #[cfg(target_os = "macos")]
             let win_builder = win_builder.title_bar_style(TitleBarStyle::Transparent);
+
+            // disable decorations for Windows to show custom titlebar
+            #[cfg(target_os = "windows")]
+            let win_builder = win_builder.decorations(false);
 
             let window = win_builder.build().unwrap();
 
