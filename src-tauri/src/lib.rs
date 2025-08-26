@@ -1,19 +1,38 @@
-use tauri::Manager;
-use window_vibrancy::{apply_blur, apply_vibrancy, NSVisualEffectMaterial};
+use tauri::{Theme, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let window = app.get_webview_window("main").unwrap();
+            let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+                .title("aitetsu")
+                .inner_size(800.0, 600.0)
+                .theme(Some(Theme::Light));
 
+            // set transparent title bar only when building for macOS
             #[cfg(target_os = "macos")]
-            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(24.0))
-                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+            let win_builder = win_builder.title_bar_style(TitleBarStyle::Transparent);
 
-            #[cfg(target_os = "windows")]
-            apply_blur(&window, Some((24, 24, 24, 125)))
-                .expect("Unsupported platform! 'apply_blur' is only supported on Windows");
+            let window = win_builder.build().unwrap();
+
+            // set background color only when building for macOS
+            #[cfg(target_os = "macos")]
+            {
+                use cocoa::appkit::{NSColor, NSWindow};
+                use cocoa::base::{id, nil};
+
+                let ns_window = window.ns_window().unwrap() as id;
+                unsafe {
+                    let bg_color = NSColor::colorWithRed_green_blue_alpha_(
+                        nil,
+                        215.0 / 255.0,
+                        216.0 / 255.0,
+                        221.5 / 255.0,
+                        1.0,
+                    );
+                    ns_window.setBackgroundColor_(bg_color);
+                }
+            }
 
             Ok(())
         })

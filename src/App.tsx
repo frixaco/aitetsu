@@ -220,7 +220,7 @@ function App() {
       style={{ overscrollBehavior: 'none' }}
     >
       <FPSCounter />
-      <Titlebar />
+      {/* <Titlebar /> */}
 
       {/* viewport */}
       <div
