@@ -396,26 +396,111 @@ function V2Viewport() {
 function V1Viewport() {
   const cards = useMainStore((state) => state.cards);
   const cameraRef = useRef({ x: 0, y: 0, z: 1 });
+  const targetCameraRef = useRef({ x: 0, y: 0, z: 1 });
   const rafRef = useRef<number>(null);
   const planeRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const scheduleCameraRender = () => {
     if (rafRef.current) return;
-    rafRef.current = requestAnimationFrame(() => {
-      if (!planeRef.current) return;
-      const { x, y, z } = cameraRef.current;
-      planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
-      planeRef.current.style.transformOrigin = '0 0';
+    rafRef.current = requestAnimationFrame(tick);
+  };
 
+  const tick = () => {
+    if (!planeRef.current) return;
+
+    const cam = cameraRef.current;
+    const target = targetCameraRef.current;
+
+    // Easing factor (0.2 = 20% of the distance per frame)
+    const ease = 0.25;
+
+    cam.x += (target.x - cam.x) * ease;
+    cam.y += (target.y - cam.y) * ease;
+    cam.z += (target.z - cam.z) * ease;
+
+    planeRef.current.style.transform = `translate3d(${cam.x}px, ${cam.y}px, 0) scale(${cam.z})`;
+    planeRef.current.style.transformOrigin = '0 0';
+
+    updateVisibility();
+
+    // Keep animating until close enough to target
+    if (
+      Math.abs(target.x - cam.x) > 0.1 ||
+      Math.abs(target.y - cam.y) > 0.1 ||
+      Math.abs(target.z - cam.z) > 0.001
+    ) {
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
       rafRef.current = null;
-    });
+    }
+  };
+
+  // const scheduleCameraRender = () => {
+  //   if (rafRef.current) return;
+  //   rafRef.current = requestAnimationFrame(() => {
+  //     if (!planeRef.current) return;
+  //     const { x, y, z } = cameraRef.current;
+  //     planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+  //     planeRef.current.style.transformOrigin = '0 0';
+  //
+  //     updateVisibility();
+  //     rafRef.current = null;
+  //   });
+  // };
+
+  const visibilityMapRef = useRef(new Map<string, boolean>());
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
+  const updateVisibility = () => {
+    if (!viewportRef.current) return;
+
+    const vr = viewportRef.current.getBoundingClientRect();
+    const pad = 400;
+
+    for (const card of cards) {
+      const { x, y } = card.position;
+      const { width, height } = card.size;
+
+      const cardTop = y * cameraRef.current.z + cameraRef.current.y;
+      const cardBottom = cardTop + height * cameraRef.current.z;
+      const cardLeft = x * cameraRef.current.z + cameraRef.current.x;
+      const cardRight = cardLeft + width * cameraRef.current.z;
+
+      const isVisible =
+        cardRight > vr.left - pad &&
+        cardLeft < vr.right + pad &&
+        cardBottom > vr.top - pad &&
+        cardTop < vr.bottom + pad;
+
+      const prev = visibilityMapRef.current.get(card.id);
+      if (isVisible !== prev) {
+        visibilityMapRef.current.set(card.id, isVisible);
+        const el = cardRefs.current.get(card.id);
+        if (el) {
+          el.style.display = isVisible ? 'block' : 'none';
+        }
+      }
+    }
   };
 
   const cardElements = useMemo(
-    () => cards.map((card) => <Card card={card} key={card.id} />),
+    () =>
+      cards.map((card) => (
+        <Card
+          ref={(el) => {
+            if (el) cardRefs.current.set(card.id, el);
+            else cardRefs.current.delete(card.id);
+          }}
+          card={card}
+          key={card.id}
+        />
+      )),
     [cards]
   );
+
+  useEffect(() => {
+    scheduleCameraRender();
+  }, [cards]);
 
   useLayoutEffect(() => {
     if (planeRef.current) {
@@ -424,6 +509,7 @@ function V1Viewport() {
     // run one RAF to “warm up”
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        updateVisibility();
         scheduleCameraRender();
       });
     });
@@ -459,6 +545,18 @@ function V1Viewport() {
     camY: number;
   }>({ id: null, startX: 0, startY: 0, camX: 0, camY: 0 });
 
+  // useEffect(() => {
+  //   const handlePointerUp = () => {
+  //     drag.current.id = null;
+  //   };
+  //   window.addEventListener('pointerup', handlePointerUp);
+  //   window.addEventListener('pointercancel', handlePointerUp);
+  //   return () => {
+  //     window.removeEventListener('pointerup', handlePointerUp);
+  //     window.removeEventListener('pointercancel', handlePointerUp);
+  //   };
+  // }, []);
+
   return (
     <div
       id="viewport"
@@ -473,32 +571,35 @@ function V1Viewport() {
           const cursorViewportX = e.clientX - r.left;
           const cursorViewportY = e.clientY - r.top;
 
-          const cursorPlaneX =
-            (cursorViewportX - cameraRef.current.x) / cameraRef.current.z;
-          const cursorPlaneY =
-            (cursorViewportY - cameraRef.current.y) / cameraRef.current.z;
+          // Use targetCameraRef (not cameraRef) for stable zoom math
+          const { x: camX, y: camY, z: camZ } = cameraRef.current;
 
-          const MIN_ZOOM = 0.25;
+          const cursorPlaneX = (cursorViewportX - camX) / camZ;
+          const cursorPlaneY = (cursorViewportY - camY) / camZ;
+
+          const MIN_ZOOM = 0.1;
           const MAX_ZOOM = 3;
           const ZOOM_SPEED = isWindows ? 0.001 : 0.015;
+
           const newZoom = Math.min(
-            cameraRef.current.z *
-              Math.max(Math.exp(-e.deltaY * ZOOM_SPEED), MIN_ZOOM),
+            Math.max(camZ * Math.exp(-e.deltaY * ZOOM_SPEED), MIN_ZOOM),
             MAX_ZOOM
           );
 
           const newCursorPlaneX = cursorViewportX - newZoom * cursorPlaneX;
           const newCursorPlaneY = cursorViewportY - newZoom * cursorPlaneY;
 
-          cameraRef.current.x = newCursorPlaneX;
-          cameraRef.current.y = newCursorPlaneY;
-          cameraRef.current.z = newZoom;
+          targetCameraRef.current.z = newZoom;
+          targetCameraRef.current.x = newCursorPlaneX;
+          targetCameraRef.current.y = newCursorPlaneY;
 
           scheduleCameraRender();
         } else {
           e.preventDefault();
-          cameraRef.current.x += -e.deltaX;
-          cameraRef.current.y += -e.deltaY;
+          // cameraRef.current.x += -e.deltaX;
+          // cameraRef.current.y += -e.deltaY;
+          targetCameraRef.current.x = cameraRef.current.x - e.deltaX;
+          targetCameraRef.current.y = cameraRef.current.y - e.deltaY;
           scheduleCameraRender();
         }
       }}
@@ -527,6 +628,7 @@ function V1Viewport() {
         }
       }}
       onPointerMove={(e) => {
+        if (drag.current.id !== e.pointerId) return;
         if (e.buttons === 1 || e.buttons === 4) {
           // TODO: movementXY can be jittery, save prev position
           // cameraRef.current.x += e.movementX;
@@ -534,8 +636,10 @@ function V1Viewport() {
 
           const dx = e.clientX - drag.current.startX;
           const dy = e.clientY - drag.current.startY;
-          cameraRef.current.x = drag.current.camX + dx;
-          cameraRef.current.y = drag.current.camY + dy;
+          // cameraRef.current.x = drag.current.camX + dx;
+          // cameraRef.current.y = drag.current.camY + dy;
+          targetCameraRef.current.x = drag.current.camX + dx;
+          targetCameraRef.current.y = drag.current.camY + dy;
           scheduleCameraRender();
         }
       }}
@@ -569,9 +673,9 @@ function V1Viewport() {
         ref={planeRef}
         className="backface-hidden absolute top-0 left-0 will-change-transform"
         style={{
-          transitionDuration: '150ms',
-          transitionProperty: 'transform',
-          transitionTimingFunction: 'ease-out',
+          // transitionDuration: '150ms',
+          // transitionProperty: 'transform',
+          // transitionTimingFunction: 'ease-out',
           transformOrigin: '0 0',
         }}
       >
