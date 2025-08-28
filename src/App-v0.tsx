@@ -11,7 +11,6 @@ import { default as TiptapText } from '@tiptap/extension-text';
 import {
   forwardRef,
   memo,
-  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -19,11 +18,6 @@ import {
   useState,
 } from 'react';
 import { create } from 'zustand';
-import { Stage, Layer, Rect, Group } from 'react-konva';
-import { Html } from 'react-konva-utils';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 import './App.css';
 
 const appWindow = getCurrentWindow();
@@ -97,7 +91,7 @@ interface CardsState {
   setActiveTab: (tabId: 'v1' | 'v2') => void;
 }
 
-const useMainStore = create<CardsState>((set, get) => ({
+const useMainStore = create<CardsState>((set) => ({
   activeTab: 'v1',
   cards: INITIAL_CARDS,
   addCard: (card) => set((state) => ({ cards: [...state.cards, card] })),
@@ -108,55 +102,10 @@ const useMainStore = create<CardsState>((set, get) => ({
   setActiveTab: (tabId) => set(() => ({ activeTab: tabId })),
 }));
 
-const Debug = () => {
-  const [fps, setFPS] = useState(0);
-  const frameCount = useRef(0);
-  const lastTime = useRef(performance.now());
-
-  useEffect(() => {
-    const updateFPS = () => {
-      frameCount.current++;
-      const currentTime = performance.now();
-      const deltaTime = currentTime - lastTime.current;
-
-      if (deltaTime >= 1000) {
-        setFPS(Math.round((frameCount.current * 1000) / deltaTime));
-        frameCount.current = 0;
-        lastTime.current = currentTime;
-      }
-      requestAnimationFrame(updateFPS);
-    };
-    requestAnimationFrame(updateFPS);
-  }, []);
-
-  return (
-    <div className="fixed top-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm font-mono z-50 flex flex-col items-center">
-      <span>FPS: {fps}</span>
-
-      <div className="flex gap-2">
-        <button
-          onClick={() => useMainStore.getState().setActiveTab('v1')}
-          className="bg-gray-700 px-2 rounded-sm"
-        >
-          v1
-        </button>
-        <button
-          onClick={() => useMainStore.getState().setActiveTab('v2')}
-          className="bg-gray-700 px-2 rounded-sm"
-        >
-          v2
-        </button>
-      </div>
-    </div>
-  );
-};
-
 const platformName = platform();
 const isWindows = platformName === 'windows';
 
 function App() {
-  const activeTab = useMainStore((state) => state.activeTab);
-
   const [openSheet, setOpenSheet] = useState(false);
 
   useKeyboardShortcut([
@@ -183,12 +132,11 @@ function App() {
       className="relative flex h-screen transform-3d flex-col overflow-hidden bg-[#d7d8dd]"
       style={{ overscrollBehavior: 'none' }}
     >
-      <Debug />
+      {/* <Debug /> */}
       {isWindows && <Titlebar />}
 
-      {/* viewport */}
-      {activeTab === 'v1' && <V1Viewport />}
-      {activeTab === 'v2' && <V2Viewport />}
+      {/* Viewport */}
+      <Viewport />
 
       {/* Bottom sheet drawer */}
       <div
@@ -199,7 +147,6 @@ function App() {
           transform: openSheet
             ? 'translate3d(0, 0, 0) scale(1)'
             : 'translate3d(0, 100%, 0) scale(0.90)',
-          // opacity: openSheet ? 1 : 0,
           overscrollBehavior: 'none',
         }}
       >
@@ -218,182 +165,7 @@ function App() {
   );
 }
 
-function V2Viewport() {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cameraRef = useRef({ x: 0, y: 0, z: 1 });
-  const rafRef = useRef<number>(null);
-
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.save();
-      ctx.translate(cameraRef.current.x, cameraRef.current.y);
-      ctx.scale(cameraRef.current.z, cameraRef.current.z);
-
-      ctx.fillStyle = '#edeef3';
-      ctx.fillRect(100, 100, 200, 300);
-
-      ctx.restore();
-    },
-    []
-  );
-
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    const viewport = viewportRef.current!;
-    const ro = new ResizeObserver(() => resize());
-    ro.observe(viewport);
-    resize();
-
-    function resize() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw(canvas, ctx);
-    }
-
-    draw(canvas, ctx);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey && viewportRef.current) {
-        e.preventDefault();
-
-        const r = viewportRef.current.getBoundingClientRect();
-        const cursorViewportX = e.clientX - r.left;
-        const cursorViewportY = e.clientY - r.top;
-
-        const cursorPlaneX =
-          (cursorViewportX - cameraRef.current.x) / cameraRef.current.z;
-        const cursorPlaneY =
-          (cursorViewportY - cameraRef.current.y) / cameraRef.current.z;
-
-        const MIN_ZOOM = 0.25;
-        const MAX_ZOOM = 3;
-        const ZOOM_SPEED = isWindows ? 0.001 : 0.015;
-        const newZoom = Math.min(
-          Math.max(
-            cameraRef.current.z * Math.exp(-e.deltaY * ZOOM_SPEED),
-            MIN_ZOOM
-          ),
-          MAX_ZOOM
-        );
-
-        const newCursorPlaneX = cursorViewportX - newZoom * cursorPlaneX;
-        const newCursorPlaneY = cursorViewportY - newZoom * cursorPlaneY;
-
-        cameraRef.current.x = newCursorPlaneX;
-        cameraRef.current.y = newCursorPlaneY;
-        cameraRef.current.z = newZoom;
-
-        scheduleCameraRender();
-      } else {
-        e.preventDefault();
-        cameraRef.current.x += -e.deltaX;
-        cameraRef.current.y += -e.deltaY;
-        scheduleCameraRender();
-      }
-    };
-
-    viewport.addEventListener('wheel', onWheel, { passive: false });
-  }, []);
-
-  const scheduleCameraRender = () => {
-    if (rafRef.current) return;
-
-    rafRef.current = requestAnimationFrame(() => {
-      if (!canvasRef.current) return;
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-      draw(canvas, ctx);
-
-      rafRef.current = null;
-    });
-  };
-
-  // Easing function
-  function easeOutCubic(t: number) {
-    return 1 - Math.pow(1 - t, 3);
-  }
-
-  // Animate camera from current to target over duration
-  function animateCamera(
-    cameraRef: React.MutableRefObject<{ x: number; y: number; z: number }>,
-    target: { x: number; y: number; z: number },
-    duration = 150,
-    draw: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void
-  ) {
-    const start = { ...cameraRef.current };
-    const startTime = performance.now();
-
-    function tick(now: number) {
-      const elapsed = now - startTime;
-      const t = Math.min(elapsed / duration, 1); // 0 → 1
-      const eased = easeOutCubic(t);
-
-      // Interpolate each property
-      cameraRef.current.x = start.x + (target.x - start.x) * eased;
-      cameraRef.current.y = start.y + (target.y - start.y) * eased;
-      cameraRef.current.z = start.z + (target.z - start.z) * eased;
-
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-      draw(canvas, ctx);
-
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      }
-    }
-
-    requestAnimationFrame(tick);
-  }
-
-  return (
-    <div
-      id="viewport"
-      ref={viewportRef}
-      className="relative flex-1 overflow-hidden"
-      onPointerDown={(e) => {
-        if (
-          (e.button === 0 || e.button === 1) &&
-          e.target.closest('#viewport')
-        ) {
-          console.log('pointer down on plane');
-        }
-      }}
-      onPointerMove={(e) => {
-        if (e.buttons === 1 || e.buttons === 4) {
-          // TODO: If the browser drops events (common on high‑DPI trackpads), you can get jitter.
-          // Fix: on pointerdown, record the pointer’s starting position and the camera’s starting offset. On pointermove, compute deltas relative to that. This is more stable.
-          cameraRef.current.x += e.movementX;
-          cameraRef.current.y += e.movementY;
-          scheduleCameraRender();
-        }
-      }}
-      onPointerUp={() => {
-        animateCamera(cameraRef, cameraRef.current, 150, () => {
-          scheduleCameraRender(); // or directly call draw()
-        });
-      }}
-      onPointerLeave={(e) => {}}
-      onPointerCancel={(e) => {}}
-    >
-      <canvas ref={canvasRef} className="size-full" />
-    </div>
-  );
-}
-
-function V1Viewport() {
+function Viewport() {
   const cards = useMainStore((state) => state.cards);
   const cameraRef = useRef({ x: 0, y: 0, z: 1 });
   const targetCameraRef = useRef({ x: 0, y: 0, z: 1 });
@@ -435,19 +207,6 @@ function V1Viewport() {
       rafRef.current = null;
     }
   };
-
-  // const scheduleCameraRender = () => {
-  //   if (rafRef.current) return;
-  //   rafRef.current = requestAnimationFrame(() => {
-  //     if (!planeRef.current) return;
-  //     const { x, y, z } = cameraRef.current;
-  //     planeRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
-  //     planeRef.current.style.transformOrigin = '0 0';
-  //
-  //     updateVisibility();
-  //     rafRef.current = null;
-  //   });
-  // };
 
   const visibilityMapRef = useRef(new Map<string, boolean>());
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
@@ -515,28 +274,6 @@ function V1Viewport() {
     });
   }, []);
 
-  // const isInteractingRef = useRef(false);
-  // useEffect(() => {
-  //   const planeElement = planeRef.current;
-  //
-  //   const handleTransitionEnd = () => {
-  //     // This function is called automatically when the CSS transition finishes.
-  //     if (planeElement && !isInteractingRef.current) {
-  //       planeElement.style.transition = ''; // Remove all transition properties at once
-  //     }
-  //   };
-  //
-  //   if (planeElement) {
-  //     planeElement.addEventListener('transitionend', handleTransitionEnd);
-  //   }
-  //
-  //   return () => {
-  //     if (planeElement) {
-  //       planeElement.removeEventListener('transitionend', handleTransitionEnd);
-  //     }
-  //   };
-  // }, []);
-
   const drag = useRef<{
     id: number | null;
     startX: number;
@@ -545,24 +282,11 @@ function V1Viewport() {
     camY: number;
   }>({ id: null, startX: 0, startY: 0, camX: 0, camY: 0 });
 
-  // useEffect(() => {
-  //   const handlePointerUp = () => {
-  //     drag.current.id = null;
-  //   };
-  //   window.addEventListener('pointerup', handlePointerUp);
-  //   window.addEventListener('pointercancel', handlePointerUp);
-  //   return () => {
-  //     window.removeEventListener('pointerup', handlePointerUp);
-  //     window.removeEventListener('pointercancel', handlePointerUp);
-  //   };
-  // }, []);
-
   return (
     <div
       id="viewport"
       ref={viewportRef}
       className="relative flex-1 overflow-hidden"
-      // APPROACH 3 - TODO: still lagggy on first few scrolls
       onWheel={(e) => {
         if (e.ctrlKey && viewportRef.current) {
           e.preventDefault();
@@ -571,7 +295,6 @@ function V1Viewport() {
           const cursorViewportX = e.clientX - r.left;
           const cursorViewportY = e.clientY - r.top;
 
-          // Use targetCameraRef (not cameraRef) for stable zoom math
           const { x: camX, y: camY, z: camZ } = cameraRef.current;
 
           const cursorPlaneX = (cursorViewportX - camX) / camZ;
@@ -596,8 +319,6 @@ function V1Viewport() {
           scheduleCameraRender();
         } else {
           e.preventDefault();
-          // cameraRef.current.x += -e.deltaX;
-          // cameraRef.current.y += -e.deltaY;
           targetCameraRef.current.x = cameraRef.current.x - e.deltaX;
           targetCameraRef.current.y = cameraRef.current.y - e.deltaY;
           scheduleCameraRender();
@@ -606,7 +327,7 @@ function V1Viewport() {
       onPointerDown={(e) => {
         if (
           (e.button === 0 || e.button === 1) &&
-          e.target.closest('#viewport')
+          (e.target as HTMLDivElement).closest('#viewport')
         ) {
           console.log('pointer down on plane');
 
@@ -619,46 +340,23 @@ function V1Viewport() {
             camX: cameraRef.current.x,
             camY: cameraRef.current.y,
           };
-
-          // isInteractingRef.current = true;
-          // // IMPORTANT: Immediately disable transitions when interaction starts.
-          // if (planeRef.current) {
-          //   planeRef.current.style.transition = '';
-          // }
         }
       }}
       onPointerMove={(e) => {
         if (drag.current.id !== e.pointerId) return;
         if (e.buttons === 1 || e.buttons === 4) {
-          // TODO: movementXY can be jittery, save prev position
-          // cameraRef.current.x += e.movementX;
-          // cameraRef.current.y += e.movementY;
-
           const dx = e.clientX - drag.current.startX;
           const dy = e.clientY - drag.current.startY;
-          // cameraRef.current.x = drag.current.camX + dx;
-          // cameraRef.current.y = drag.current.camY + dy;
           targetCameraRef.current.x = drag.current.camX + dx;
           targetCameraRef.current.y = drag.current.camY + dy;
           scheduleCameraRender();
         }
       }}
       onPointerUp={(e) => {
-        // isInteractingRef.current = false;
-        // // On interaction end, apply the transition for a smooth stop.
-        // if (planeRef.current) {
-        //   planeRef.current.style.transition = 'transform 150ms ease-out';
-        // }
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
         drag.current.id = null;
       }}
       onPointerLeave={(e) => {
-        // if (isInteractingRef.current) {
-        //   isInteractingRef.current = false;
-        //   if (planeRef.current) {
-        //     planeRef.current.style.transition = 'transform 150ms ease-out';
-        //   }
-        // }
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
         drag.current.id = null;
       }}
@@ -673,6 +371,7 @@ function V1Viewport() {
         ref={planeRef}
         className="backface-hidden absolute top-0 left-0 will-change-transform"
         style={{
+          // NOTE: already implemented via JS above
           // transitionDuration: '150ms',
           // transitionProperty: 'transform',
           // transitionTimingFunction: 'ease-out',
@@ -720,8 +419,6 @@ function SheetContent({ shouldFocus }: { shouldFocus: boolean }) {
     <div className="w-1/2 h-full contain-layout">
       <EditorContext.Provider value={providerValue}>
         <EditorContent editor={editor} />
-        {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
-        {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}
       </EditorContext.Provider>
     </div>
   );
@@ -743,6 +440,7 @@ const Card = memo(
         className="absolute select-none h-72 w-48 bg-[#edeef3] rounded-3xl p-4 shadow-xl backface-hidden"
         style={{
           transform: `translate3d(${card.position.x}px, ${card.position.y}px, 0)`,
+          scale: isHovered ? 1.02 : 1,
           transformOrigin: 'center center',
           transition: 'transform 150ms ease-in-out',
           // TODO: add only before animating: dragging
@@ -837,6 +535,49 @@ function Titlebar() {
   );
 }
 
+export function Debug() {
+  const [fps, setFPS] = useState(0);
+  const frameCount = useRef(0);
+  const lastTime = useRef(performance.now());
+
+  useEffect(() => {
+    const updateFPS = () => {
+      frameCount.current++;
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime.current;
+
+      if (deltaTime >= 1000) {
+        setFPS(Math.round((frameCount.current * 1000) / deltaTime));
+        frameCount.current = 0;
+        lastTime.current = currentTime;
+      }
+      requestAnimationFrame(updateFPS);
+    };
+    requestAnimationFrame(updateFPS);
+  }, []);
+
+  return (
+    <div className="fixed top-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm font-mono z-50 flex flex-col items-center">
+      <span>FPS: {fps}</span>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => useMainStore.getState().setActiveTab('v1')}
+          className="bg-gray-700 px-2 rounded-sm"
+        >
+          v1
+        </button>
+        <button
+          onClick={() => useMainStore.getState().setActiveTab('v2')}
+          className="bg-gray-700 px-2 rounded-sm"
+        >
+          v2
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type KeyboardShortcutOptions = {
   ctrlKey?: boolean;
   altKey?: boolean;
@@ -900,64 +641,3 @@ function useKeyboardShortcut(shortcuts: KeyCombo[]) {
 }
 
 export default App;
-
-// APPROACH 1
-// const handleWheel = useCallback((e: WheelEvent) => {
-//   if (e.ctrlKey) {
-//     e.preventDefault();
-//
-//     console.log('zoom', {
-//       dy: e.deltaY,
-//     });
-//   } else {
-//     cameraRef.current.x += -e.deltaX;
-//     cameraRef.current.y += -e.deltaY;
-//
-//     scheduleCameraRender();
-//   }
-// }, []);
-//
-// const viewportRefCallback = useCallback(
-//   (node) => {
-//     console.log(node);
-//     if (node == null) {
-//       return;
-//     }
-//     viewportRef.current = node;
-//     node.addEventListener('wheel', handleWheel, { passive: false });
-//   },
-//   [handleWheel]
-// );
-
-// APPROACH 2
-// useEffect(() => {
-//   const handleWheel = (e: WheelEvent) => {
-//     if (e.ctrlKey) {
-//       e.preventDefault();
-//
-//       console.log('zoom', {
-//         dy: e.deltaY,
-//       });
-//     } else {
-//       cameraRef.current.x += -e.deltaX;
-//       cameraRef.current.y += -e.deltaY;
-//
-//       scheduleCameraRender();
-//     }
-//   };
-//
-//   const viewportElement = viewportRef.current;
-//   if (viewportElement) {
-//     viewportElement.addEventListener('wheel', handleWheel, {
-//       passive: true,
-//     });
-//   }
-//
-//   return () => {
-//     if (viewportElement) {
-//       viewportElement.removeEventListener('wheel', handleWheel, {
-//         passive: true,
-//       });
-//     }
-//   };
-// }, []);
