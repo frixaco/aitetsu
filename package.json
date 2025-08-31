@@ -22,6 +22,7 @@
     "@tiptap/extensions": "^3.3.0",
     "@tiptap/pm": "^3.3.0",
     "@tiptap/react": "^3.3.0",
+    "@xyflow/react": "^12.8.4",
     "markdown-it": "^14.1.0",
     "markdown-it-task-lists": "^2.1.1",
     "marked": "^16.2.1",
