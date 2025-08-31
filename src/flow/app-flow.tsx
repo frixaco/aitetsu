@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useKeyboardShortcut } from './keyboardShortcuts';
 import { Viewport } from './viewport';
 import { Titlebar } from './titlebar';
-import { Drawer } from './drawer';
+import { Drawer } from '../drawer';
 import { isWindows } from './utils';
 
 import './global.css';

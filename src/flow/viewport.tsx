@@ -56,7 +56,7 @@ function CardNode({ data: { id, title, content } }: NodeProps<CardNode>) {
   return (
     <div
       className="px-4 py-2 shadow-md rounded-2xl bg-[#e7eef3] w-56 h-80"
-      onClick={(e) => {
+      onClick={() => {
         setActiveCard(id);
       }}
     >
@@ -87,37 +87,80 @@ const edgeTypes = {
   chat: CardEdge,
 };
 
-const initialNodes: Array<CardNode> = [
-  {
-    id: 'n1',
-    type: 'chat',
-    position: { x: 0, y: 0 },
-    data: {
-      id: crypto.randomUUID(),
-      title: 'Hello World',
-      content:
-        'Lorem2== aljalsdjalksjd alkjsdlas djaljd lajkdjalskjd lakjsd kajskld jalsjd kad',
-    },
-  },
-  {
-    id: 'n2',
-    type: 'chat',
-    position: { x: 0, y: 400 },
-    data: {
-      id: crypto.randomUUID(),
-      title: 'How are you doing?',
-      content:
-        'LK JLSDJKL LJkjdal sjdljwlkqjlkqjlejwejqlwj df90 230jr0 3j2 93j 2jr 03j0r3j',
-    },
-  },
-];
-const initialEdges: Array<CardEdge> = [
-  {
-    id: 'n1-n2',
-    source: 'n1',
-    target: 'n2',
-  },
-];
+function generate200Cards() {
+  const nodes: Array<CardNode> = [];
+  const edges: Array<CardEdge> = [];
+
+  const gridCols = 20;
+  const cardWidth = 350;
+  const cardHeight = 400;
+
+  for (let i = 0; i < 200; i++) {
+    const row = Math.floor(i / gridCols);
+    const col = i % gridCols;
+
+    nodes.push({
+      id: `n${i + 1}`,
+      type: 'chat',
+      position: {
+        x: col * cardWidth,
+        y: row * cardHeight,
+      },
+      data: {
+        id: crypto.randomUUID(),
+        title: `Card ${i + 1}`,
+        content: `This is the content for card number ${i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+      },
+    });
+
+    if (i > 0 && i % gridCols !== 0) {
+      edges.push({
+        id: `n${i}-n${i + 1}`,
+        source: `n${i}`,
+        target: `n${i + 1}`,
+      });
+    }
+  }
+
+  return { initialNodes: nodes, initialEdges: edges };
+}
+
+const initialCards = generate200Cards();
+
+const initialNodes: Array<CardNode> = initialCards.initialNodes;
+// [
+//   {
+//     id: 'n1',
+//     type: 'chat',
+//     position: { x: 0, y: 0 },
+//     data: {
+//       id: crypto.randomUUID(),
+//       title: 'Hello World',
+//       content:
+//         'Lorem2== aljalsdjalksjd alkjsdlas djaljd lajkdjalskjd lakjsd kajskld jalsjd kad',
+//     },
+//   },
+//   {
+//     id: 'n2',
+//     type: 'chat',
+//     position: { x: 0, y: 400 },
+//     data: {
+//       id: crypto.randomUUID(),
+//       title: 'How are you doing?',
+//       content:
+//         'LK JLSDJKL LJkjdal sjdljwlkqjlkqjlejwejqlwj df90 230jr0 3j2 93j 2jr 03j0r3j',
+//     },
+//   },
+// ];
+
+const initialEdges: Array<CardEdge> = initialCards.initialEdges;
+// [
+//   {
+//     id: 'n1-n2',
+//     source: 'n1',
+//     target: 'n2',
+//   },
+// ];
 
 export function Viewport() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -152,6 +195,7 @@ export function Viewport() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
+        proOptions={{ hideAttribution: true }}
       />
     </div>
   );

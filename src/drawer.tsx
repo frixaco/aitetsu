@@ -42,12 +42,13 @@ export function Drawer({ isOpen }: { isOpen: boolean }) {
     <>
       <div
         className={
-          'absolute inset-x-0 bottom-0 z-10 flex will-change-transform flex-col items-center overflow-hidden bg-gray-100 pt-16 shadow-2xl duration-400 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-3xl top-10'
+          'absolute inset-x-0 bottom-0 z-10 flex will-change-transform flex-col items-center overflow-hidden bg-gray-100 pt-16 shadow-2xl duration-400 ease-[cubic-bezier(0.25,0.8,0.25,1)] rounded-none top-10'
         }
         style={{
           transform: isOpen
             ? 'translate(0, 0) scale(1)'
-            : 'translate(0, 100%) scale(0.90)',
+            : // TODO:: is this better than translate(0%, 100%)?
+              'translate(10%, 100%) scale(0.90)',
         }}
       >
         <div className="w-1/2 h-full contain-layout">
