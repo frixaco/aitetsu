@@ -1,38 +1,41 @@
-import { forwardRef, memo, useState } from 'react';
-import { useMainStore } from './store';
+import { memo, useState } from 'react';
+import { type Card as CardType } from './store';
 
-export const Card = memo(
-  forwardRef<
-    HTMLDivElement,
-    {
-      id: string;
-    }
-  >(function Card({ id }, ref) {
-    const card = useMainStore((state) => state.cardsMap.get(id)!);
-    const [isHovered, setIsHovered] = useState(false);
+export const Card = memo(function Card({ card }: { card: CardType }) {
+  const [isHovered, setIsHovered] = useState(false);
 
-    if (!card) {
-      return null;
-    }
+  if (!card) {
+    return null;
+  }
 
-    return (
+  return (
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="absolute select-none pointer-events-auto"
+      style={{
+        height: card.size.height,
+        width: card.size.width,
+        transform: `translate(${card.position.x}px, ${card.position.y}px)`,
+        willChange: 'transform',
+      }}
+    >
       <div
+        // Inner div handles SCALING and STYLING
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        ref={ref}
-        className="absolute select-none h-72 w-48 bg-[#edeef3] rounded-3xl p-4 shadow-xl backface-hidden origin-center"
+        className="h-full w-full bg-[#edeef3] rounded-3xl p-4 shadow-xl"
         style={{
-          transform: `translate(${card.position.x}px, ${card.position.y}px) scale(${isHovered ? 1.02 : 1})`,
+          transform: `scale(${isHovered ? 1.02 : 1})`,
           transition: 'transform 150ms ease-in-out',
-          // TODO: add only before animating: dragging
-          // willChange: 'transform',
+          // you can keep these here
           contentVisibility: 'auto',
-          containIntrinsicSize: '280px 192px', // fallback size (h x w)
+          containIntrinsicSize: '192px 280px',
         }}
       >
         <h1 className="font-bold text-lg">{card.title}</h1>
         <p className="">{card.content}</p>
       </div>
-    );
-  })
-);
+    </div>
+  );
+});

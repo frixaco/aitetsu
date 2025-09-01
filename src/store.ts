@@ -58,7 +58,7 @@ export const generateTestCards = (count: number): Card[] => {
       x: (i % 10) * 320,
       y: Math.floor(i / 10) * 360,
     },
-    size: { width: 300, height: 280 },
+    size: { width: 192, height: 288 },
   }));
 };
 
