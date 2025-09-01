@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useMainStore, useVisibleCardIds } from './store';
+import { useMainStore } from './store';
 import { Card } from './card';
 import * as d3 from 'd3';
 
@@ -8,7 +8,7 @@ export function Viewport() {
   const setViewportRect = useMainStore((state) => state.setViewportRect);
 
   const cardsMap = useMainStore((state) => state.cards);
-  const visibleCardIds = useVisibleCardIds();
+  const visibleCardIds = useMainStore((state) => state.visibleCardIds);
 
   const planeRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -19,7 +19,7 @@ export function Viewport() {
   const update = () => {
     if (transformRef.current && planeRef.current) {
       const { x, y, k } = transformRef.current;
-      planeRef.current.style.transform = `translate(${x}px, ${y}px, 0px) scale(${k})`;
+      planeRef.current.style.transform = `translate(${x}px, ${y}px) scale(${k})`;
       setTransform(transformRef.current);
     }
     animationFrameRef.current = null;

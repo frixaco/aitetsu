@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useKeyboardShortcut } from './keyboardShortcuts';
+import { useKeyboardShortcut } from './keyboard-shortcuts';
 import { Viewport } from './viewport';
 import { Titlebar } from './titlebar';
 import { Drawer } from './drawer';

@@ -14,9 +14,9 @@ export const Card = memo(function Card({ card }: { card: CardType }) {
       onMouseLeave={() => setIsHovered(false)}
       className="absolute select-none pointer-events-auto"
       style={{
-        height: card.size.height,
-        width: card.size.width,
-        transform: `translate(${card.position.x}px, ${card.position.y}px)`,
+        height: card.height,
+        width: card.width,
+        transform: `translate(${card.x}px, ${card.y}px)`,
         willChange: 'transform',
       }}
     >

@@ -1,12 +1,15 @@
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { type WorkerResponse } from './visibility-worker';
 
 export type Card = {
   id: string;
   title: string;
   content: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 export const generateTestCards = (count: number): Card[] => {
@@ -49,81 +52,77 @@ export const generateTestCards = (count: number): Card[] => {
       '',
       'Final paragraph wrapping things up.',
     ].join('\n'),
-    position: {
-      x: (i % 10) * 320,
-      y: Math.floor(i / 10) * 360,
-    },
-    size: { width: 192, height: 288 },
+    x: (i % 10) * 320,
+    y: Math.floor(i / 10) * 360,
+    width: 192,
+    height: 288,
   }));
 };
 
 export const INITIAL_CARDS = generateTestCards(200);
+export const INITIAL_CARDS_PAYLOAD = INITIAL_CARDS.map((c) => ({
+  id: c.id,
+  x: c.x,
+  y: c.y,
+  width: c.width,
+  height: c.height,
+}));
 
 export interface CardsState {
   cards: Map<string, Card>;
+  visibleCardIds: Set<string>;
   transform: { x: number; y: number; k: number };
   viewportRect: { width: number; height: number };
   setTransform: (transform: { x: number; y: number; k: number }) => void;
   setViewportRect: (rect: { width: number; height: number }) => void;
 }
 
-export const useMainStore = createWithEqualityFn<CardsState>()(
-  (set) => ({
-    cards: new Map(INITIAL_CARDS.map((c) => [c.id, c])),
-    transform: { x: 0, y: 0, k: 1 },
-    viewportRect: { width: 0, height: 0 },
-    setTransform: (transform) => set({ transform }),
-    setViewportRect: (viewportRect) => set({ viewportRect }),
-  }),
-  shallow
-);
-
-const selectVisibleCardIds = (state: CardsState): Set<string> => {
-  const { cards, transform, viewportRect } = state;
-
-  if (!viewportRect.width || !viewportRect.height) {
-    return new Set();
-  }
-
-  const pad = 800;
-  const { x, y, k } = transform;
-  const { width, height } = viewportRect;
-
-  const cameraXStart = (0 - x) / k;
-  const cameraYStart = (0 - y) / k;
-  const cameraXEnd = (width - x) / k;
-  const cameraYEnd = (height - y) / k;
-
-  const cameraWorldRect = {
-    x: cameraXStart - pad,
-    y: cameraYStart - pad,
-    width: cameraXEnd - cameraXStart + pad * 2,
-    height: cameraYEnd - cameraYStart + pad * 2,
+export const useMainStore = createWithEqualityFn<CardsState>()((set, get) => {
+  console.log('creating new worker');
+  const worker = new Worker(
+    new URL('./visibility-worker.ts', import.meta.url),
+    {
+      type: 'module',
+    }
+  );
+  worker.postMessage({
+    type: 'init',
+    payload: INITIAL_CARDS_PAYLOAD,
+  });
+  worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+    const data = event.data;
+    if (data.type === 'update-visibility') {
+      set({ visibleCardIds: data.payload });
+    }
   };
 
-  const visibleIds = new Set<string>();
-  for (const card of cards.values()) {
-    const cardRect = { ...card.position, ...card.size };
-    const isVisible =
-      cardRect.x < cameraWorldRect.x + cameraWorldRect.width &&
-      cardRect.x + cardRect.width > cameraWorldRect.x &&
-      cardRect.y < cameraWorldRect.y + cameraWorldRect.height &&
-      cardRect.y + cardRect.height > cameraWorldRect.y;
+  return {
+    cards: new Map(INITIAL_CARDS.map((c) => [c.id, c])),
+    visibleCardIds: new Set<string>(),
+    transform: { x: 0, y: 0, k: 1 },
+    viewportRect: { width: 0, height: 0 },
+    setTransform: (transform) => {
+      set({ transform });
 
-    if (isVisible) {
-      visibleIds.add(card.id);
-    }
-  }
+      worker.postMessage({
+        type: 'calculate-visibility',
+        payload: {
+          transform: get().transform,
+          viewportRect: get().viewportRect,
+        },
+      });
+      return;
+    },
+    setViewportRect: (viewportRect) => {
+      set({ viewportRect });
 
-  return visibleIds;
-};
-
-export const useVisibleCardIds = () => {
-  return useMainStore(selectVisibleCardIds, (oldSet, newSet) => {
-    if (oldSet.size !== newSet.size) return false;
-    for (const id of oldSet) {
-      if (!newSet.has(id)) return false;
-    }
-    return true;
-  });
-};
+      worker.postMessage({
+        type: 'calculate-visibility',
+        payload: {
+          transform: get().transform,
+          viewportRect: get().viewportRect,
+        },
+      });
+    },
+  };
+}, shallow);
