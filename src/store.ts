@@ -60,8 +60,7 @@ export const generateTestCards = (count: number): Card[] => {
 export const INITIAL_CARDS = generateTestCards(200);
 
 export interface CardsState {
-  cardsMap: Map<string, Card>;
-  cards: Card[];
+  cards: Map<string, Card>;
   transform: { x: number; y: number; k: number };
   viewportRect: { width: number; height: number };
   setTransform: (transform: { x: number; y: number; k: number }) => void;
@@ -70,8 +69,7 @@ export interface CardsState {
 
 export const useMainStore = createWithEqualityFn<CardsState>()(
   (set) => ({
-    cardsMap: new Map(INITIAL_CARDS.map((c) => [c.id, c])),
-    cards: INITIAL_CARDS,
+    cards: new Map(INITIAL_CARDS.map((c) => [c.id, c])),
     transform: { x: 0, y: 0, k: 1 },
     viewportRect: { width: 0, height: 0 },
     setTransform: (transform) => set({ transform }),
@@ -93,8 +91,8 @@ const selectVisibleCardIds = (state: CardsState): Set<string> => {
 
   const cameraXStart = (0 - x) / k;
   const cameraYStart = (0 - y) / k;
-  const cameraXEnd = width / k;
-  const cameraYEnd = height / k;
+  const cameraXEnd = (width - x) / k;
+  const cameraYEnd = (height - y) / k;
 
   const cameraWorldRect = {
     x: cameraXStart - pad,
@@ -104,7 +102,7 @@ const selectVisibleCardIds = (state: CardsState): Set<string> => {
   };
 
   const visibleIds = new Set<string>();
-  for (const card of cards) {
+  for (const card of cards.values()) {
     const cardRect = { ...card.position, ...card.size };
     const isVisible =
       cardRect.x < cameraWorldRect.x + cameraWorldRect.width &&

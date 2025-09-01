@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMainStore, useVisibleCardIds } from './store';
 import { Card } from './card';
 import * as d3 from 'd3';
@@ -7,28 +7,41 @@ export function Viewport() {
   const setTransform = useMainStore((state) => state.setTransform);
   const setViewportRect = useMainStore((state) => state.setViewportRect);
 
-  const cards = useMainStore((state) => state.cards);
+  const cardsMap = useMainStore((state) => state.cards);
   const visibleCardIds = useVisibleCardIds();
 
   const planeRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
+  const transformRef = useRef<{ x: number; y: number; k: number } | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const update = () => {
+    if (transformRef.current && planeRef.current) {
+      const { x, y, k } = transformRef.current;
+      planeRef.current.style.transform = `translate(${x}px, ${y}px, 0px) scale(${k})`;
+      setTransform(transformRef.current);
+    }
+    animationFrameRef.current = null;
+  };
+
+  const scheduleUpdate = (transform: d3.ZoomTransform) => {
+    transformRef.current = transform;
+    if (!animationFrameRef.current) {
+      animationFrameRef.current = requestAnimationFrame(update);
+    }
+  };
+
   useEffect(() => {
     if (!viewportRef.current || !planeRef.current) return;
 
     const viewport = d3.select<HTMLDivElement, unknown>(viewportRef.current);
-    const plane = d3.select<HTMLDivElement, unknown>(planeRef.current);
 
     const zoom = d3
       .zoom<HTMLDivElement, unknown>()
       .scaleExtent([0.25, 3])
       .on('zoom', (event: d3.D3ZoomEvent<HTMLDivElement, unknown>) => {
-        const x = event.transform.x;
-        const y = event.transform.y;
-        const k = event.transform.k;
-
-        plane.style('transform', `translate(${x}px, ${y}px) scale(${k})`);
-        setTransform(event.transform);
+        scheduleUpdate(event.transform);
       });
     viewport.call(zoom);
 
@@ -53,7 +66,16 @@ export function Viewport() {
     return () => ro.disconnect();
   }, []);
 
-  const visibleCards = cards.filter((card) => visibleCardIds.has(card.id));
+  const visibleCards = useMemo(() => {
+    const result = [];
+    for (const id of visibleCardIds) {
+      const card = cardsMap.get(id);
+      if (card) {
+        result.push(card);
+      }
+    }
+    return result;
+  }, [visibleCardIds, cardsMap]);
 
   return (
     <div
