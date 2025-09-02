@@ -39,7 +39,7 @@ export function Viewport() {
 
     const zoom = d3
       .zoom<HTMLDivElement, unknown>()
-      .scaleExtent([0.25, 3])
+      .scaleExtent([0.1, 3])
       .on('zoom', (event: d3.D3ZoomEvent<HTMLDivElement, unknown>) => {
         scheduleUpdate(event.transform);
       });

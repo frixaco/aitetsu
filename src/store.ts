@@ -52,14 +52,14 @@ export const generateTestCards = (count: number): Card[] => {
       '',
       'Final paragraph wrapping things up.',
     ].join('\n'),
-    x: (i % 10) * 320,
-    y: Math.floor(i / 10) * 360,
+    x: (i % 30) * 320,
+    y: Math.floor(i / 30) * 360,
     width: 192,
     height: 288,
   }));
 };
 
-export const INITIAL_CARDS = generateTestCards(200);
+export const INITIAL_CARDS = generateTestCards(500);
 export const INITIAL_CARDS_PAYLOAD = INITIAL_CARDS.map((c) => ({
   id: c.id,
   x: c.x,
