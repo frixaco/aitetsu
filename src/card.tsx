@@ -1,34 +1,56 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { type Card as CardType } from './store';
 
-export const Card = memo(function Card({ card }: { card: CardType }) {
-  const [isHovered, setIsHovered] = useState(false);
+// const LOD_THRESHOLD = 0.4;
 
+export const Card = memo(function Card({
+  card,
+  // zoom,
+}: {
+  card: CardType;
+  // zoom: number;
+}) {
   if (!card) {
     return null;
   }
 
+  // if (zoom < LOD_THRESHOLD) {
+  //   return (
+  //     <div
+  //       className="absolute select-none pointer-events-auto bg-[#edeef3] rounded-3xl"
+  //       style={{
+  //         height: card.height,
+  //         width: card.width,
+  //         transform: `translate(${card.x}px, ${card.y}px)`,
+  //       }}
+  //     >
+  //       <div
+  //         className="h-full w-full bg-[#edeef3] rounded-3xl p-4"
+  //         style={{
+  //           contentVisibility: 'auto',
+  //           containIntrinsicSize: '192px 280px',
+  //         }}
+  //       >
+  //         <h1 className="font-bold text-lg">{card.title}</h1>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className="absolute select-none pointer-events-auto"
       style={{
         height: card.height,
         width: card.width,
         transform: `translate(${card.x}px, ${card.y}px)`,
         willChange: 'transform',
+        contain: 'layout style',
       }}
     >
       <div
-        // Inner div handles SCALING and STYLING
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className="h-full w-full bg-[#edeef3] rounded-3xl p-4 shadow-xl"
+        className="h-full w-full bg-[#edeef3] rounded-3xl p-4 shadow-xl hover:scale-105 duration-150 ease-in"
         style={{
-          transform: `scale(${isHovered ? 1.02 : 1})`,
-          transition: 'transform 150ms ease-in-out',
-          // you can keep these here
           contentVisibility: 'auto',
           containIntrinsicSize: '192px 280px',
         }}
