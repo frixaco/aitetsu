@@ -1,4 +1,15 @@
-import { platform } from '@tauri-apps/plugin-os';
+export const isTauri = '__TAURI__' in window;
 
-export const platformName = platform();
-export const isWindows = platformName === 'windows';
+export const getPlatformName = async () => {
+  if (!isTauri) {
+    return {
+      isWindows: false,
+    };
+  }
+
+  const { platform } = await import('@tauri-apps/plugin-os');
+  const name = platform();
+  return {
+    isWindows: name === 'windows',
+  };
+};

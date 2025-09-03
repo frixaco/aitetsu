@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useKeyboardShortcut } from './keyboard-shortcuts';
 import { Viewport } from './viewport';
 import { Titlebar } from './titlebar';
 import { Drawer } from './drawer';
-import { isWindows } from './utils';
+import { isTauri, getPlatformName } from './utils';
 
 import './global.css';
 
@@ -29,10 +29,20 @@ function App() {
     },
   ]);
 
+  const [isWindows, setIsWindows] = useState(false);
+
+  useEffect(() => {
+    if (!isTauri) return;
+
+    (async () => {
+      setIsWindows((await getPlatformName())!.isWindows);
+    })();
+  }, []);
+
   return (
     <main className="relative flex h-screen flex-col overflow-hidden bg-[#d7d8dd]">
       {/* <Debug /> */}
-      {isWindows && <Titlebar openSheet={openSheet} />}
+      {isTauri && isWindows && <Titlebar openSheet={openSheet} />}
 
       {/* Viewport */}
       <Viewport />
