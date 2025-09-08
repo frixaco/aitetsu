@@ -48,5 +48,8 @@
     "typescript": "~5.8.3",
     "ultracite": "5.2.4",
     "vite": "^7.0.4"
-  }
+  },
+  "trustedDependencies": [
+    "@tailwindcss/oxide"
+  ]
 }

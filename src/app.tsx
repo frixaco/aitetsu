@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react';
-import { useKeyboardShortcut } from './keyboard-shortcuts';
-import { Viewport } from './viewport';
-import { Titlebar } from './titlebar';
-import { Drawer } from './drawer';
-import { isTauri, getPlatformName } from './utils';
+import { useEffect, useState } from "react";
+import { useKeyboardShortcut } from "./keyboard-shortcuts";
+import { Viewport } from "./viewport";
+import { Titlebar } from "./titlebar";
+import { Drawer } from "./drawer";
+import { isTauri, getPlatformName } from "./utils";
 
-import './global.css';
+import "./global.css";
 
 function App() {
   const [openSheet, setOpenSheet] = useState(false);
 
   useKeyboardShortcut([
     {
-      key: 'n',
+      key: "n",
       ctrlKey: true,
       callback: () => {
-        console.log('opening sheet');
+        console.log("opening sheet");
         setOpenSheet((p) => !p);
       },
     },
     {
-      key: 'Escape',
+      key: "Escape",
       callback: () => {
         if (openSheet) {
           setOpenSheet(false);

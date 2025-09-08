@@ -2,7 +2,7 @@
 
 Ultracite enforces strict type safety, accessibility standards, and consistent code quality for JavaScript/TypeScript projects using Biome's lightning-fast formatter and linter.
 
-- Ignore v1-agent/ and v2-chat/ directories
+**IMPORTANT**: IGNORE v1-agent/ AND v2-chat/ DIRECTORIES
 
 ## Key Principles
 
