@@ -1,110 +1,106 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html,
-body {
-  overflow: hidden;
-  overscroll-behavior: none;
-  background-color: #d7d8dd;
+@keyframes blip {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  15%,
+  55% {
+    opacity: 0.3;
+  }
 }
 
-.tiptap {
-  outline: none;
+html,
+body,
+#root {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
 
-  :first-child {
-    margin-top: 0;
-  }
+* {
+  min-width: 0;
+}
 
-  /* List styles */
-  ul,
-  ol {
-    padding: 0 1rem;
-    margin: 1.25rem 1rem 1.25rem 0.4rem;
+textarea {
+  resize: none;
+}
 
-    li p {
-      margin-top: 0.25em;
-      margin-bottom: 0.25em;
-    }
-  }
+.top-sh {
+  box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -webkit-box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -moz-box-shadow: 0px 1px 0px 0px rgba(51, 51, 51, 1) inset;
+}
 
-  /* Heading styles */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    line-height: 1.1;
-    margin-top: 2.5rem;
-    text-wrap: pretty;
-    font-weight: bold;
-  }
+.bottom-sh {
+  box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -webkit-box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+  -moz-box-shadow: 0px -1px 0px 0px rgba(51, 51, 51, 1) inset;
+}
 
-  h1,
-  h2 {
-    margin-top: 3.5rem;
-    margin-bottom: 1.5rem;
-  }
+.black-in {
+  box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+  -webkit-box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+  -moz-box-shadow: 0px 0px 1px 2px rgba(0, 0, 0, 1) inset;
+}
 
-  h1 {
-    font-size: 1.4rem;
-  }
+.light-out {
+  box-shadow: 1px 1px 1px 0px rgba(55, 55, 55, 1);
+  -webkit-box-shadow: 1px 1px 1px 0px rgb(55, 55, 55);
+  -moz-box-shadow: 1px 1px 1px 0px rgba(55, 55, 55, 1);
+}
 
-  h2 {
-    font-size: 1.2rem;
-  }
+.light-out-2 {
+  box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -webkit-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -moz-box-shadow: 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+}
 
-  h3 {
-    font-size: 1.1rem;
-  }
+.light-in-2 {
+  box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+  -webkit-box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+  -moz-box-shadow: 0px -1px 1px 1px rgba(55, 55, 55, 0.75) inset;
+}
 
-  h4,
-  h5,
-  h6 {
-    font-size: 1rem;
-  }
+.light-in-out-2 {
+  box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
 
-  /* Code and preformatted text styles */
-  code {
-    background-color: var(--purple-light);
-    border-radius: 0.4rem;
-    color: var(--black);
-    font-size: 0.85rem;
-    padding: 0.25em 0.3em;
-  }
+  -webkit-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+  -moz-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 1px 1px rgba(55, 55, 55, 0.75);
+}
 
-  pre {
-    background: var(--black);
-    border-radius: 0.5rem;
-    color: var(--white);
-    font-family: "JetBrainsMono", monospace;
-    margin: 1.5rem 0;
-    padding: 0.75rem 1rem;
+.light-in-out-3 {
+  box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
 
-    code {
-      background: none;
-      color: inherit;
-      font-size: 0.8rem;
-      padding: 0;
-    }
-  }
+  -webkit-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
+  -moz-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 1px 2px 0px rgba(55, 55, 55, 0.75);
+}
 
-  blockquote {
-    border-left: 3px solid var(--gray-3);
-    margin: 1.5rem 0;
-    padding-left: 1rem;
-  }
+.light-out-black-in {
+  box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
 
-  hr {
-    border: none;
-    border-top: 1px solid var(--gray-2);
-    margin: 2rem 0;
-  }
-
-  p.is-editor-empty:first-child::before {
-    color: #adb5bd;
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-  }
+  -webkit-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
+  -moz-box-shadow:
+    0px 1px 1px 1px rgba(55, 55, 55, 0.75),
+    inset 0px 0px 0px 0px rgba(0, 0, 0, 1);
 }
