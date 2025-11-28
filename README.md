@@ -14,3 +14,4 @@
 - Fix titlebar on macOS: https://v2.tauri.app/learn/window-customization/#macos-transparent-titlebar-with-custom-window-background-color
 - Have 2 modes for each card: AI chat and Note. Can switch modes for existing cards as well: AI chats -> become fully formatted markdown Note, Note -> populate input box for AI chat
 - Pin a message like a bookmark (e.g. wanna bookmark an explanation response in a long conversation about smth)
+- Command palette to switch models, ...
