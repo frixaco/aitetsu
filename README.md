@@ -15,3 +15,14 @@
 - Have 2 modes for each card: AI chat and Note. Can switch modes for existing cards as well: AI chats -> become fully formatted markdown Note, Note -> populate input box for AI chat
 - Pin a message like a bookmark (e.g. wanna bookmark an explanation response in a long conversation about smth)
 - Command palette to switch models, ...
+
+### Potential Improvements
+
+- **Blurry text after zoom**: Currently using React key-based remount on zoom-end to force repaint. Consider CSS-only approach for better performance:
+  ```tsx
+  // Toggle will-change to force layer re-rasterization without React reconciliation
+  planeRef.current.style.willChange = "auto";
+  requestAnimationFrame(() => {
+    planeRef.current.style.willChange = "transform";
+  });
+  ```

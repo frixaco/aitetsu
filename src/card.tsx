@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { type Card as CardType } from './store';
+import { memo } from "react";
+import { type Card as CardType } from "./store";
 
 // const LOD_THRESHOLD = 0.4;
 
@@ -39,20 +39,20 @@ export const Card = memo(function Card({
 
   return (
     <div
-      className="absolute select-none pointer-events-auto"
+      className="absolute select-none pointer-events-auto cursor-pointer"
       style={{
         height: card.height,
         width: card.width,
         transform: `translate(${card.x}px, ${card.y}px)`,
-        willChange: 'transform',
-        contain: 'layout style',
+        willChange: "transform",
+        contain: "layout style",
       }}
     >
       <div
-        className="h-full w-full bg-[#edeef3] rounded-3xl p-4 shadow-xl hover:scale-105 duration-150 ease-in"
+        className="h-full w-full bg-[#edeef3] rounded-3xl p-4 shadow-xl hover:scale-102 duration-200 ease-out"
         style={{
-          contentVisibility: 'auto',
-          containIntrinsicSize: '192px 280px',
+          contentVisibility: "auto",
+          containIntrinsicSize: "192px 280px",
         }}
       >
         <h1 className="font-bold text-lg">{card.title}</h1>

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useMainStore } from './store';
-import { Card } from './card';
-import * as d3 from 'd3';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMainStore } from "./store";
+import { Card } from "./card";
+import * as d3 from "d3";
 
 export function Viewport() {
   const setTransform = useMainStore((state) => state.setTransform);
@@ -15,6 +15,8 @@ export function Viewport() {
 
   const transformRef = useRef<{ x: number; y: number; k: number } | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const [repaintKey, setRepaintKey] = useState(0);
+  const repaintKeyRef = useRef(setRepaintKey);
 
   const update = () => {
     if (transformRef.current && planeRef.current) {
@@ -40,13 +42,16 @@ export function Viewport() {
     const zoom = d3
       .zoom<HTMLDivElement, unknown>()
       .scaleExtent([0.1, 3])
-      .on('zoom', (event: d3.D3ZoomEvent<HTMLDivElement, unknown>) => {
+      .on("zoom", (event: d3.D3ZoomEvent<HTMLDivElement, unknown>) => {
         scheduleUpdate(event.transform);
+      })
+      .on("end", () => {
+        repaintKeyRef.current((k) => k + 1);
       });
     viewport.call(zoom);
 
     return () => {
-      viewport.on('.zoom', null);
+      viewport.on(".zoom", null);
     };
   }, []);
 
@@ -86,11 +91,11 @@ export function Viewport() {
       <div
         id="plane"
         ref={planeRef}
-        style={{ transform: 'translate(0px, 0px) scale(1)' }}
+        style={{ transform: "translate(0px, 0px) scale(1)" }}
         className="pointer-events-none absolute top-0 left-0 will-change-transform"
       >
         {visibleCards.map((card) => (
-          <Card key={card.id} card={card} />
+          <Card key={`${card.id}-${repaintKey}`} card={card} />
         ))}
       </div>
     </div>
