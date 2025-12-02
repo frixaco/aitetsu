@@ -2,14 +2,14 @@ import "./global.css";
 
 function App() {
   return (
-    <main className="flex h-screen flex-col max-w-4xl mx-auto relative">
+    <main className="flex h-screen flex-col max-w-4xl mx-auto">
       <section
         id="convo"
         className="flex flex-col h-full bg-red-500 overflow-auto gap-2"
       >
         {Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).map((n) => (
           <div key={n} className="bg-white flex group gap-4">
-            <div className="sticky bg-yellow-500 h-fit group-hover:opacity-100 flex opacity-0 flex-col gap-1 text-xs">
+            <div className="sticky top-0 bg-yellow-500 h-fit group-hover:opacity-100 flex opacity-0 flex-col gap-1 text-xs">
               <button>BM</button>
               <button>CY</button>
               <button>BR</button>
@@ -37,7 +37,7 @@ function App() {
         ))}
       </section>
 
-      <section id="input" className="sticky bg-blue-500 flex flex-col">
+      <section id="input" className="sticky bottom-0 bg-blue-500 flex flex-col">
         <input type="text" placeholder="Enter prompt" />
 
         <select>
