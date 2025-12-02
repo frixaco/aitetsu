@@ -1,14 +1,20 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWindow, Window } from "@tauri-apps/api/window";
+import { isTauri } from "./utils";
 
-const appWindow = getCurrentWindow();
+let appWindow: Window | null = null;
+if (isTauri) {
+  appWindow = getCurrentWindow();
+}
 
 export function Titlebar({ openSheet }: { openSheet: boolean }) {
+  if (!appWindow) return null;
+
   return (
     <div
       className="sticky top-0 right-0 left-0 flex h-10 items-center"
       style={{
-        backgroundColor: 'rgb(215, 216, 221)',
-        backdropFilter: openSheet ? 'blur(5px)' : 'none',
+        backgroundColor: "rgb(215, 216, 221)",
+        backdropFilter: openSheet ? "blur(5px)" : "none",
       }}
       data-tauri-drag-region
     >
