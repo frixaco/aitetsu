@@ -1,5 +1,32 @@
 @import "tailwindcss";
 
+@theme {
+  --animate-glide-down: glide-down 0.2s ease-out forwards;
+  --animate-glide-up: glide-up 0.2s ease-out forwards;
+
+  @keyframes glide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes glide-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 html,
 body {
   overflow: hidden;
