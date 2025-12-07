@@ -8,29 +8,69 @@ import {
   SplitIcon,
 } from "lucide-react";
 import { Button } from "@base-ui-components/react/button";
+import { ContextMenu } from "@base-ui-components/react/context-menu";
 import "./global.css";
 
-function Prompt() {
+function MessageMenu({
+  children,
+  items,
+}: React.PropsWithChildren<{
+  items: {
+    labelOrIcon: string | React.ReactNode;
+    onClick: () => void;
+  }[];
+}>) {
   return (
-    <div className="flex px-8 justify-end group relative text-ink">
-      <div className="bg-muted transition-shadow duration-150 hover:shadow-md px-3 py-2 rounded">
-        <p>
-          Lorem ipsum dolor, sit amet consectetur adipisicing. Lorem ipsum dolor
-          sit amet, consectetur adipisicing elit. Id
-        </p>
-      </div>
-      <div className="absolute pt-1 bg-transparent top-full right-8 z-10 flex opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150">
-        <div className="flex bg-muted shadow-md rounded">
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
-            <RefreshCcwIcon size={16} />
-          </Button>
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
-            <EditIcon size={16} />
-          </Button>
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
-            <CopyIcon size={16} />
-          </Button>
-        </div>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger className="flex items-center justify-center select-none">
+        {children}
+      </ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Positioner className="outline-none">
+          <ContextMenu.Popup className="bg-muted origin-[var(--transform-origin)] rounded py-1 text-gray-900 shadow-lg shadow-gray-200 outline outline-1 outline-gray-200 transition-[opacity] data-[ending-style]:opacity-0 dark:shadow-none dark:-outline-offset-1 dark:outline-gray-300">
+            {items.map((item) => (
+              <>
+                <ContextMenu.Item
+                  onClick={() => item.onClick()}
+                  className="data-[highlighted]:text-ink data-[highlighted]:before:bg-hover flex cursor-default px-4 py-2 text-sm leading-4 outline-none select-none data-[highlighted]:relative data-[highlighted]:z-0 data-[highlighted]:before:absolute data-[highlighted]:before:inset-x-1 data-[highlighted]:before:inset-y-0 data-[highlighted]:before:z-[-1] data-[highlighted]:before:rounded-sm"
+                >
+                  {item.labelOrIcon}
+                </ContextMenu.Item>
+                {/* <ContextMenu.Separator className="mx-4 my-1.5 h-px bg-gray-200" /> */}
+              </>
+            ))}
+          </ContextMenu.Popup>
+        </ContextMenu.Positioner>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+
+function Prompt() {
+  const items = [
+    {
+      labelOrIcon: <RefreshCcwIcon size={16} />,
+      onClick: () => {},
+    },
+    {
+      labelOrIcon: <EditIcon size={16} />,
+      onClick: () => {},
+    },
+    {
+      labelOrIcon: <CopyIcon size={16} />,
+      onClick: () => {},
+    },
+  ];
+
+  return (
+    <div className="group text-ink relative flex justify-end px-8">
+      <div className="bg-muted rounded px-3 py-2 transition-shadow duration-150 hover:shadow-md">
+        <MessageMenu items={items}>
+          <p>
+            Lorem ipsum dolor, sit amet consectetur adipisicing. Lorem ipsum
+            dolor sit amet, consectetur adipisicing elit. Id
+          </p>
+        </MessageMenu>
       </div>
     </div>
   );
@@ -56,18 +96,18 @@ function Response() {
         </p>
       </div>
 
-      <div className="sticky bottom-0 self-end bg-transparent opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150">
-        <div className="flex flex-col bg-muted rounded w-fit">
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
+      <div className="pointer-events-none sticky bottom-0 self-end bg-transparent opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+        <div className="bg-muted flex w-fit flex-col rounded">
+          <Button className="text-ink-soft hover:text-ink hover:bg-hover cursor-pointer rounded-md p-2 transition-colors duration-100">
             <MinusIcon size={16} />
           </Button>
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
+          <Button className="text-ink-soft hover:text-ink hover:bg-hover cursor-pointer rounded-md p-2 transition-colors duration-100">
             <CopyIcon size={16} />
           </Button>
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
+          <Button className="text-ink-soft hover:text-ink hover:bg-hover cursor-pointer rounded-md p-2 transition-colors duration-100">
             <PinIcon size={16} />
           </Button>
-          <Button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
+          <Button className="text-ink-soft hover:text-ink hover:bg-hover cursor-pointer rounded-md p-2 transition-colors duration-100">
             <SplitIcon size={16} />
           </Button>
         </div>
@@ -78,10 +118,10 @@ function Response() {
 
 function App() {
   return (
-    <main className="flex h-screen flex-col max-w-3xl mx-auto">
+    <main className="mx-auto flex h-screen max-w-3xl flex-col">
       <section
         id="convo"
-        className="flex flex-col h-full overflow-auto gap-6 hide-scrollbar py-8"
+        className="hide-scrollbar flex h-full flex-col gap-6 overflow-auto py-8"
       >
         {Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).map((n) => (
           <div key={n} className="flex flex-col gap-4">
@@ -94,23 +134,23 @@ function App() {
 
       <section
         id="input"
-        className="sticky bottom-0 flex flex-col px-8 pb-6 pt-2 gap-2"
+        className="sticky bottom-0 flex flex-col gap-2 px-8 pt-2 pb-6"
       >
-        <div className="absolute top-0 left-0 right-0 h-10 -translate-y-full bg-linear-to-t from-gray-100 to-transparent pointer-events-none" />
+        <div className="pointer-events-none absolute top-0 right-0 left-0 h-10 -translate-y-full bg-linear-to-t from-gray-100 to-transparent" />
         <textarea
           rows={1}
           placeholder="Message..."
-          className="bg-elevated rounded px-4 py-3 resize-none outline-none ring-1 ring-muted focus:ring-ink-faint transition-shadow duration-100 text-ink"
+          className="bg-elevated ring-muted focus:ring-ink-faint text-ink resize-none rounded px-4 py-3 ring-1 transition-shadow duration-100 outline-none"
         />
 
-        <div className="flex gap-3 px-2 items-center">
-          <select className="bg-transparent text-ink-soft text-sm outline-none cursor-pointer hover:text-ink transition-colors duration-100">
+        <div className="flex items-center gap-3 px-2">
+          <select className="text-ink-soft hover:text-ink cursor-pointer bg-transparent text-sm transition-colors duration-100 outline-none">
             <option>GPT5.1</option>
             <option>Gemini 3 Pro</option>
             <option>Claude Opus 4.5</option>
           </select>
 
-          <button className="p-2 rounded-md cursor-pointer text-ink-soft hover:text-ink hover:bg-hover transition-colors duration-100">
+          <button className="text-ink-soft hover:text-ink hover:bg-hover cursor-pointer rounded-md p-2 transition-colors duration-100">
             <GlobeIcon size={16} />
           </button>
         </div>
