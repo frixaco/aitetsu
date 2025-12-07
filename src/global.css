@@ -1,8 +1,27 @@
+@source "../node_modules/streamdown/dist/*.js";
 @import "tailwindcss";
 
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
 @theme {
-  --animate-glide-down: glide-down 0.2s ease-out forwards;
-  --animate-glide-up: glide-up 0.2s ease-out forwards;
+  /* Warm paper palette - feels like reading, not using software */
+  --color-surface: #f6f4f0;
+  --color-elevated: #fdfcfa;
+  --color-muted: #ebe8e2;
+  --color-ink: #2e2b27;
+  --color-ink-soft: #7a756c;
+  --color-ink-faint: #a9a49a;
+  --color-hover: #dedad2;
+
+  --animate-glide-down: glide-down 0.15s ease-out forwards;
+  --animate-glide-up: glide-up 0.15s ease-out forwards;
 
   @keyframes glide-down {
     from {
@@ -31,5 +50,15 @@ html,
 body {
   overflow: hidden;
   overscroll-behavior: none;
-  background-color: #d7d8dd;
+  background-color: var(--color-surface);
+  color: var(--color-ink);
 }
+
+::selection {
+  background-color: var(--color-hover);
+}
+
+textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+
